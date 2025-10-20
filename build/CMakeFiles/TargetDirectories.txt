@@ -1,0 +1,4 @@
+C:/Users/Tom/Desktop/War Games/build/CMakeFiles/ALL_BUILD.dir
+C:/Users/Tom/Desktop/War Games/build/CMakeFiles/ZERO_CHECK.dir
+C:/Users/Tom/Desktop/War Games/build/sim-core/CMakeFiles/simcore.dir
+C:/Users/Tom/Desktop/War Games/build/apps/sim-cli/CMakeFiles/sim-cli.dir

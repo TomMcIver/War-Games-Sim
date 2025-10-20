@@ -1,0 +1,10 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/Users/Tom/Desktop/War Games/build/cmake_install.cmake",
+		"C:/Users/Tom/Desktop/War Games/build/sim-core/cmake_install.cmake",
+		"C:/Users/Tom/Desktop/War Games/build/apps/cmake_install.cmake",
+		"C:/Users/Tom/Desktop/War Games/build/apps/sim-cli/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
