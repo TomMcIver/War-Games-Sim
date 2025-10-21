@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-subbuild\CMakeFiles\0192b2ba0eb8c41ca9c5af45ffb99e14\entt-populate-mkdir.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-subbuild\CMakeFiles\0192b2ba0eb8c41ca9c5af45ffb99e14\entt-populate-download.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-subbuild\CMakeFiles\0192b2ba0eb8c41ca9c5af45ffb99e14\entt-populate-update.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-subbuild\CMakeFiles\0192b2ba0eb8c41ca9c5af45ffb99e14\entt-populate-patch.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-subbuild\CMakeFiles\0192b2ba0eb8c41ca9c5af45ffb99e14\entt-populate-configure.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-subbuild\CMakeFiles\0192b2ba0eb8c41ca9c5af45ffb99e14\entt-populate-build.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-subbuild\CMakeFiles\0192b2ba0eb8c41ca9c5af45ffb99e14\entt-populate-install.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-subbuild\CMakeFiles\0192b2ba0eb8c41ca9c5af45ffb99e14\entt-populate-test.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-subbuild\CMakeFiles\6e8d1069b299b3892f79a729cadca0ec\entt-populate-complete.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-subbuild\CMakeFiles\d4cc7f4c74c76bd5e2939791f212cb41\entt-populate.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-subbuild\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-subbuild\CMakeFiles\entt-populate" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{11CAF8B1-BAEB-3BCE-8F0F-7AB2B2A8A0E8}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

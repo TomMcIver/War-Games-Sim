@@ -1,7 +1,9 @@
 #include "engine.h"
+#include "world.h"
+#include "systems/kinematics.h"
 
 Engine::Engine(const SimConfig &config)
-    : config_(config), currentTick_(0), rng_(config.seed) {}
+    : config_(config), currentTick_(0), rng_(config.seed), world_(std::make_unique<World>()) {}
 
 void Engine::enqueueUserCommand(const std::vector<uint8_t> &command) {
   commandQueue_.push_back(command);
@@ -10,6 +12,9 @@ void Engine::enqueueUserCommand(const std::vector<uint8_t> &command) {
 void Engine::tick() {
   // process queued commands
   commandQueue_.clear();
+
+  // run systems
+  KinematicsSystem::update(*world_, config_.tickSeconds);
 
   //  simulation tick
   ++currentTick_;

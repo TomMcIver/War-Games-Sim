@@ -1,0 +1,10 @@
+^C:\USERS\TOM\DOCUMENTS\GITHUB\WAR-GAMES-SIM\BUILD\_DEPS\ENTT-SUBBUILD\CMAKEFILES\D4CC7F4C74C76BD5E2939791F212CB41\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/Tom/Documents/GitHub/War-Games-Sim/build/_deps/entt-subbuild -BC:/Users/Tom/Documents/GitHub/War-Games-Sim/build/_deps/entt-subbuild --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/_deps/entt-subbuild/entt-populate.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

@@ -1,0 +1,46 @@
+{
+	"sources" : 
+	[
+		{
+			"file" : "C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/_deps/entt-subbuild/CMakeFiles/entt-populate"
+		},
+		{
+			"file" : "C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/_deps/entt-subbuild/CMakeFiles/d4cc7f4c74c76bd5e2939791f212cb41/entt-populate.rule"
+		},
+		{
+			"file" : "C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/_deps/entt-subbuild/CMakeFiles/6e8d1069b299b3892f79a729cadca0ec/entt-populate-complete.rule"
+		},
+		{
+			"file" : "C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/_deps/entt-subbuild/CMakeFiles/0192b2ba0eb8c41ca9c5af45ffb99e14/entt-populate-build.rule"
+		},
+		{
+			"file" : "C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/_deps/entt-subbuild/CMakeFiles/0192b2ba0eb8c41ca9c5af45ffb99e14/entt-populate-configure.rule"
+		},
+		{
+			"file" : "C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/_deps/entt-subbuild/CMakeFiles/0192b2ba0eb8c41ca9c5af45ffb99e14/entt-populate-download.rule"
+		},
+		{
+			"file" : "C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/_deps/entt-subbuild/CMakeFiles/0192b2ba0eb8c41ca9c5af45ffb99e14/entt-populate-install.rule"
+		},
+		{
+			"file" : "C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/_deps/entt-subbuild/CMakeFiles/0192b2ba0eb8c41ca9c5af45ffb99e14/entt-populate-mkdir.rule"
+		},
+		{
+			"file" : "C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/_deps/entt-subbuild/CMakeFiles/0192b2ba0eb8c41ca9c5af45ffb99e14/entt-populate-patch.rule"
+		},
+		{
+			"file" : "C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/_deps/entt-subbuild/CMakeFiles/0192b2ba0eb8c41ca9c5af45ffb99e14/entt-populate-test.rule"
+		},
+		{
+			"file" : "C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/_deps/entt-subbuild/CMakeFiles/0192b2ba0eb8c41ca9c5af45ffb99e14/entt-populate-update.rule"
+		}
+	],
+	"target" : 
+	{
+		"labels" : 
+		[
+			"entt-populate"
+		],
+		"name" : "entt-populate"
+	}
+}

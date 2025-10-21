@@ -17,5 +17,14 @@ else()
   add_compile_options(-Wall -Wextra -Werror -pedantic)
 endif()
 
+# Fetch EnTT
+include(FetchContent)
+FetchContent_Declare(
+  EnTT
+  GIT_REPOSITORY https://github.com/skypjack/entt.git
+  GIT_TAG v3.13.2
+)
+FetchContent_MakeAvailable(EnTT)
+
 add_subdirectory(sim-core)
 add_subdirectory(apps)

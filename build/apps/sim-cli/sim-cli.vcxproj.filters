@@ -1,16 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="C:\Users\Tom\Desktop\War Games\apps\sim-cli\main.cpp">
+    <ClCompile Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\apps\sim-cli\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="C:\Users\Tom\Desktop\War Games\apps\sim-cli\CMakeLists.txt" />
+    <CustomBuild Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\apps\sim-cli\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">
-      <UniqueIdentifier>{F16CD3DE-98C1-3491-AE70-F4A5CC540F7F}</UniqueIdentifier>
+      <UniqueIdentifier>{2C866742-D1A6-30C4-AF62-01BA89F52BD6}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

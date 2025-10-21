@@ -22,7 +22,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{3AC3969C-A97E-3895-9A20-3663F11895B3}</ProjectGuid>
+    <ProjectGuid>{F33D94F7-C9DA-35EF-B53E-3E85C660D2CC}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <WindowsTargetPlatformVersion>10.0.26100.0</WindowsTargetPlatformVersion>
     <Platform>x64</Platform>
@@ -59,25 +59,25 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\Tom\Desktop\War Games\build\apps\sim-cli\Debug\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\apps\sim-cli\Debug\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">sim-cli.dir\Debug\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">sim-cli</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">.exe</TargetExt>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</GenerateManifest>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\Tom\Desktop\War Games\build\apps\sim-cli\Release\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\apps\sim-cli\Release\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">sim-cli.dir\Release\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|x64'">sim-cli</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|x64'">.exe</TargetExt>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</GenerateManifest>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\Tom\Desktop\War Games\build\apps\sim-cli\MinSizeRel\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\apps\sim-cli\MinSizeRel\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">sim-cli.dir\MinSizeRel\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">sim-cli</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">.exe</TargetExt>
     <LinkIncremental Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkIncremental>
     <GenerateManifest Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">true</GenerateManifest>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\Tom\Desktop\War Games\build\apps\sim-cli\RelWithDebInfo\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\apps\sim-cli\RelWithDebInfo\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">sim-cli.dir\RelWithDebInfo\</IntDir>
     <TargetName Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">sim-cli</TargetName>
     <TargetExt Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">.exe</TargetExt>
@@ -86,7 +86,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Tom\Desktop\War Games\sim-core\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\..;C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-src\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck></BufferSecurityCheck>
@@ -110,15 +110,15 @@
       <WarningLevel>Level4</WarningLevel>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;CMAKE_INTDIR="Debug"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
-      <ProgramDataBaseFileName>C:\Users\Tom\Desktop\War Games\build\apps\sim-cli\sim-cli.dir\Debug\</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\apps\sim-cli\sim-cli.dir\Debug\</ProgramDataBaseFileName>
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_DEBUG;_WINDOWS;CMAKE_INTDIR=\"Debug\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Tom\Desktop\War Games\sim-core\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\..;C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-src\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\Tom\Desktop\War Games\sim-core\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\..;C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-src\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -133,9 +133,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
-      <ImportLibrary>C:/Users/Tom/Desktop/War Games/build/apps/sim-cli/Debug/sim-cli.lib</ImportLibrary>
+      <ImportLibrary>C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/apps/sim-cli/Debug/sim-cli.lib</ImportLibrary>
       <LinkErrorReporting></LinkErrorReporting>
-      <ProgramDataBaseFile>C:/Users/Tom/Desktop/War Games/build/apps/sim-cli/Debug/sim-cli.pdb</ProgramDataBaseFile>
+      <ProgramDataBaseFile>C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/apps/sim-cli/Debug/sim-cli.pdb</ProgramDataBaseFile>
       <RandomizedBaseAddress></RandomizedBaseAddress>
       <SubSystem>Console</SubSystem>
     </Link>
@@ -145,7 +145,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Tom\Desktop\War Games\sim-core\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\..;C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-src\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <BufferSecurityCheck></BufferSecurityCheck>
@@ -170,15 +170,15 @@
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
       </DebugInformationFormat>
-      <ProgramDataBaseFileName>C:\Users\Tom\Desktop\War Games\build\apps\sim-cli\sim-cli.dir\Release\</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\apps\sim-cli\sim-cli.dir\Release\</ProgramDataBaseFileName>
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"Release\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Tom\Desktop\War Games\sim-core\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\..;C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-src\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\Tom\Desktop\War Games\sim-core\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\..;C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-src\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -193,9 +193,9 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
-      <ImportLibrary>C:/Users/Tom/Desktop/War Games/build/apps/sim-cli/Release/sim-cli.lib</ImportLibrary>
+      <ImportLibrary>C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/apps/sim-cli/Release/sim-cli.lib</ImportLibrary>
       <LinkErrorReporting></LinkErrorReporting>
-      <ProgramDataBaseFile>C:/Users/Tom/Desktop/War Games/build/apps/sim-cli/Release/sim-cli.pdb</ProgramDataBaseFile>
+      <ProgramDataBaseFile>C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/apps/sim-cli/Release/sim-cli.pdb</ProgramDataBaseFile>
       <RandomizedBaseAddress></RandomizedBaseAddress>
       <SubSystem>Console</SubSystem>
     </Link>
@@ -205,7 +205,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Tom\Desktop\War Games\sim-core\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\..;C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-src\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <BufferSecurityCheck></BufferSecurityCheck>
@@ -230,15 +230,15 @@
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <DebugInformationFormat>
       </DebugInformationFormat>
-      <ProgramDataBaseFileName>C:\Users\Tom\Desktop\War Games\build\apps\sim-cli\sim-cli.dir\MinSizeRel\</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\apps\sim-cli\sim-cli.dir\MinSizeRel\</ProgramDataBaseFileName>
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"MinSizeRel\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Tom\Desktop\War Games\sim-core\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\..;C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-src\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\Tom\Desktop\War Games\sim-core\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\..;C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-src\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -253,9 +253,9 @@
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
-      <ImportLibrary>C:/Users/Tom/Desktop/War Games/build/apps/sim-cli/MinSizeRel/sim-cli.lib</ImportLibrary>
+      <ImportLibrary>C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/apps/sim-cli/MinSizeRel/sim-cli.lib</ImportLibrary>
       <LinkErrorReporting></LinkErrorReporting>
-      <ProgramDataBaseFile>C:/Users/Tom/Desktop/War Games/build/apps/sim-cli/MinSizeRel/sim-cli.pdb</ProgramDataBaseFile>
+      <ProgramDataBaseFile>C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/apps/sim-cli/MinSizeRel/sim-cli.pdb</ProgramDataBaseFile>
       <RandomizedBaseAddress></RandomizedBaseAddress>
       <SubSystem>Console</SubSystem>
     </Link>
@@ -265,7 +265,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\Tom\Desktop\War Games\sim-core\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\..;C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-src\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AssemblerListingLocation>$(IntDir)</AssemblerListingLocation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <BufferSecurityCheck></BufferSecurityCheck>
@@ -289,15 +289,15 @@
       <WarningLevel>Level4</WarningLevel>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR="RelWithDebInfo"</PreprocessorDefinitions>
       <ObjectFileName>$(IntDir)</ObjectFileName>
-      <ProgramDataBaseFileName>C:\Users\Tom\Desktop\War Games\build\apps\sim-cli\sim-cli.dir\RelWithDebInfo\</ProgramDataBaseFileName>
+      <ProgramDataBaseFileName>C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\apps\sim-cli\sim-cli.dir\RelWithDebInfo\</ProgramDataBaseFileName>
       <ScanSourceForModuleDependencies>false</ScanSourceForModuleDependencies>
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>%(PreprocessorDefinitions);WIN32;_WINDOWS;NDEBUG;CMAKE_INTDIR=\"RelWithDebInfo\"</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>C:\Users\Tom\Desktop\War Games\sim-core\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\..;C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-src\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Midl>
-      <AdditionalIncludeDirectories>C:\Users\Tom\Desktop\War Games\sim-core\..;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\..;C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\_deps\entt-src\src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <OutputDirectory>$(ProjectDir)/$(IntDir)</OutputDirectory>
       <HeaderFileName>%(Filename).h</HeaderFileName>
       <TypeLibraryName>%(Filename).tlb</TypeLibraryName>
@@ -312,9 +312,9 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ImageHasSafeExceptionHandlers></ImageHasSafeExceptionHandlers>
-      <ImportLibrary>C:/Users/Tom/Desktop/War Games/build/apps/sim-cli/RelWithDebInfo/sim-cli.lib</ImportLibrary>
+      <ImportLibrary>C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/apps/sim-cli/RelWithDebInfo/sim-cli.lib</ImportLibrary>
       <LinkErrorReporting></LinkErrorReporting>
-      <ProgramDataBaseFile>C:/Users/Tom/Desktop/War Games/build/apps/sim-cli/RelWithDebInfo/sim-cli.pdb</ProgramDataBaseFile>
+      <ProgramDataBaseFile>C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/apps/sim-cli/RelWithDebInfo/sim-cli.pdb</ProgramDataBaseFile>
       <RandomizedBaseAddress></RandomizedBaseAddress>
       <SubSystem>Console</SubSystem>
     </Link>
@@ -323,11 +323,11 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CustomBuild Include="C:\Users\Tom\Desktop\War Games\apps\sim-cli\CMakeLists.txt">
+    <CustomBuild Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\apps\sim-cli\CMakeLists.txt">
       <UseUtf8Encoding>Always</UseUtf8Encoding>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/Users/Tom/Desktop/War Games/apps/sim-cli/CMakeLists.txt</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Building Custom Rule C:/Users/Tom/Documents/GitHub/War-Games-Sim/apps/sim-cli/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" "-SC:/Users/Tom/Desktop/War Games" "-BC:/Users/Tom/Desktop/War Games/build" --check-stamp-file "C:/Users/Tom/Desktop/War Games/build/apps/sim-cli/CMakeFiles/generate.stamp"
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/Tom/Documents/GitHub/War-Games-Sim -BC:/Users/Tom/Documents/GitHub/War-Games-Sim/build --check-stamp-file C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/apps/sim-cli/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -336,11 +336,11 @@ exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\Tom\Desktop\War Games\build\apps\sim-cli\CMakeFiles\generate.stamp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\apps\sim-cli\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</LinkObjects>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/Users/Tom/Desktop/War Games/apps/sim-cli/CMakeLists.txt</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Building Custom Rule C:/Users/Tom/Documents/GitHub/War-Games-Sim/apps/sim-cli/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" "-SC:/Users/Tom/Desktop/War Games" "-BC:/Users/Tom/Desktop/War Games/build" --check-stamp-file "C:/Users/Tom/Desktop/War Games/build/apps/sim-cli/CMakeFiles/generate.stamp"
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/Tom/Documents/GitHub/War-Games-Sim -BC:/Users/Tom/Documents/GitHub/War-Games-Sim/build --check-stamp-file C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/apps/sim-cli/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -349,11 +349,11 @@ exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\Tom\Desktop\War Games\build\apps\sim-cli\CMakeFiles\generate.stamp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\apps\sim-cli\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</LinkObjects>
-      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/Users/Tom/Desktop/War Games/apps/sim-cli/CMakeLists.txt</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">Building Custom Rule C:/Users/Tom/Documents/GitHub/War-Games-Sim/apps/sim-cli/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" "-SC:/Users/Tom/Desktop/War Games" "-BC:/Users/Tom/Desktop/War Games/build" --check-stamp-file "C:/Users/Tom/Desktop/War Games/build/apps/sim-cli/CMakeFiles/generate.stamp"
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/Tom/Documents/GitHub/War-Games-Sim -BC:/Users/Tom/Documents/GitHub/War-Games-Sim/build --check-stamp-file C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/apps/sim-cli/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -362,11 +362,11 @@ exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\Tom\Desktop\War Games\build\apps\sim-cli\CMakeFiles\generate.stamp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\apps\sim-cli\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='MinSizeRel|x64'">false</LinkObjects>
-      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/Users/Tom/Desktop/War Games/apps/sim-cli/CMakeLists.txt</Message>
+      <Message Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">Building Custom Rule C:/Users/Tom/Documents/GitHub/War-Games-Sim/apps/sim-cli/CMakeLists.txt</Message>
       <Command Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">setlocal
-"C:\Program Files\CMake\bin\cmake.exe" "-SC:/Users/Tom/Desktop/War Games" "-BC:/Users/Tom/Desktop/War Games/build" --check-stamp-file "C:/Users/Tom/Desktop/War Games/build/apps/sim-cli/CMakeFiles/generate.stamp"
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/Tom/Documents/GitHub/War-Games-Sim -BC:/Users/Tom/Documents/GitHub/War-Games-Sim/build --check-stamp-file C:/Users/Tom/Documents/GitHub/War-Games-Sim/build/apps/sim-cli/CMakeFiles/generate.stamp
 if %errorlevel% neq 0 goto :cmEnd
 :cmEnd
 endlocal &amp; call :cmErrorLevel %errorlevel% &amp; goto :cmDone
@@ -375,23 +375,23 @@ exit /b %1
 :cmDone
 if %errorlevel% neq 0 goto :VCEnd</Command>
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">%(AdditionalInputs)</AdditionalInputs>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\Tom\Desktop\War Games\build\apps\sim-cli\CMakeFiles\generate.stamp</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\apps\sim-cli\CMakeFiles\generate.stamp</Outputs>
       <LinkObjects Condition="'$(Configuration)|$(Platform)'=='RelWithDebInfo|x64'">false</LinkObjects>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="C:\Users\Tom\Desktop\War Games\apps\sim-cli\main.cpp" />
+    <ClCompile Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\apps\sim-cli\main.cpp" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>
-    <ProjectReference Include="C:\Users\Tom\Desktop\War Games\build\ZERO_CHECK.vcxproj">
-      <Project>{B72E4D52-E929-3641-A4B7-225DB2A58009}</Project>
+    <ProjectReference Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\ZERO_CHECK.vcxproj">
+      <Project>{9FDF5167-5D89-3801-990A-F941523783A8}</Project>
       <Name>ZERO_CHECK</Name>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </ProjectReference>
-    <ProjectReference Include="C:\Users\Tom\Desktop\War Games\build\sim-core\simcore.vcxproj">
-      <Project>{D3B89A18-5C01-33E1-A51A-47527320C568}</Project>
+    <ProjectReference Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\sim-core\simcore.vcxproj">
+      <Project>{0E1D8B60-5B05-3541-B0DF-2286024B1842}</Project>
       <Name>simcore</Name>
     </ProjectReference>
   </ItemGroup>

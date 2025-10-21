@@ -1,13 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <CustomBuild Include="C:\Users\Tom\Desktop\War Games\build\CMakeFiles\f845bc38729985e2c315a13adc22e604\generate.stamp.rule">
+    <CustomBuild Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\CMakeFiles\0e1d96a41cbcccb89f2e99e98b424115\generate.stamp.rule">
       <Filter>CMake Rules</Filter>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="CMake Rules">
-      <UniqueIdentifier>{F9750569-53BB-3F9D-957A-542D64080CF7}</UniqueIdentifier>
+      <UniqueIdentifier>{1449D7C0-7048-3CE7-8846-550871984266}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
