@@ -320,6 +320,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\tick_loop.cpp" />
     <ClCompile Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\world.cpp" />
     <ClCompile Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\systems\kinematics.cpp" />
+    <ClCompile Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\shared\serialization.cpp" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

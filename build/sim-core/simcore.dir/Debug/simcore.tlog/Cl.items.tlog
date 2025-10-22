@@ -2,3 +2,4 @@ C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\engine.cpp;C:\Users\Tom\Doc
 C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\tick_loop.cpp;C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\sim-core\simcore.dir\Debug\tick_loop.obj
 C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\world.cpp;C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\sim-core\simcore.dir\Debug\world.obj
 C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\systems\kinematics.cpp;C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\sim-core\simcore.dir\Debug\kinematics.obj
+C:\Users\Tom\Documents\GitHub\War-Games-Sim\shared\serialization.cpp;C:\Users\Tom\Documents\GitHub\War-Games-Sim\build\sim-core\simcore.dir\Debug\serialization.obj
