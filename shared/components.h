@@ -1,15 +1,17 @@
 #pragma once
 
 #include "types.h"
+#include "orders.h"
+#include <deque>
 
-// Position, orientation, and floor level
+// Position, orientaton, and floor level
 struct Transform {
   Vec3 pos;
   float yaw;
   int floor;
 };
 
-// Velocity and movement constraints
+// Velocity and movment constraints
 struct Kinematics {
   Vec3 vel;
   float maxSpeed;
@@ -22,4 +24,9 @@ struct TeamTag {
     Blue
   };
   Team team;
+};
+
+// order queue for entity
+struct Orders {
+  std::deque<Order> queue;
 };

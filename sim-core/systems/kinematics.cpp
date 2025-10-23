@@ -10,7 +10,7 @@ void KinematicsSystem::update(World& world, double dt) {
     auto& transform = view.get<Transform>(entity);
     auto& kinematics = view.get<Kinematics>(entity);
 
-    // Clamp velocity to maxSpeed
+    // Clamp velcity to maxSpeed
     double speed = std::sqrt(kinematics.vel.x * kinematics.vel.x +
                             kinematics.vel.y * kinematics.vel.y +
                             kinematics.vel.z * kinematics.vel.z);
@@ -22,7 +22,7 @@ void KinematicsSystem::update(World& world, double dt) {
       kinematics.vel.z *= scale;
     }
 
-    // Integrate position
+    // Integrat position
     transform.pos.x += kinematics.vel.x * dt;
     transform.pos.y += kinematics.vel.y * dt;
     transform.pos.z += kinematics.vel.z * dt;

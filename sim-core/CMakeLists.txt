@@ -3,7 +3,9 @@ add_library(simcore STATIC
   tick_loop.cpp
   world.cpp
   systems/kinematics.cpp
+  systems/orders.cpp
   ../shared/serialization.cpp
+  ../shared/orders.cpp
 )
 
 target_include_directories(simcore PUBLIC

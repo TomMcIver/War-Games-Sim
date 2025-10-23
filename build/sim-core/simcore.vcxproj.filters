@@ -13,7 +13,13 @@
     <ClCompile Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\systems\kinematics.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\sim-core\systems\orders.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\shared\serialization.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\Tom\Documents\GitHub\War-Games-Sim\shared\orders.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
