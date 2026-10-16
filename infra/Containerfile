@@ -7,4 +7,6 @@ RUN python3 -m venv /opt/venv
 ENV VIRTUAL_ENV=/opt/venv PATH=/opt/venv/bin:/usr/local/cargo/bin:$PATH
 RUN pip install --no-cache-dir maturin numpy pytest \
  && pip install --no-cache-dir torch --extra-index-url https://download.pytorch.org/whl/cpu
+# Lint/format tooling for infra/test-all.sh (last, so the layers above stay cached).
+RUN rustup component add rustfmt clippy
 WORKDIR /work
