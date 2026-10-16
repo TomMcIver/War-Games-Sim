@@ -449,6 +449,16 @@ mod tests {
         );
     }
 
+    /// Dump an engine replay for eyeballing in the viewer:
+    /// `bash infra/run.sh env WARSIM_REPLAY_OUT=/work/target/demo.json
+    ///  cargo test -p sim-core write_engine_replay -- --ignored`
+    #[test]
+    #[ignore = "writes a file; run on demand"]
+    fn write_engine_replay() {
+        let out = std::env::var("WARSIM_REPLAY_OUT").expect("set WARSIM_REPLAY_OUT");
+        record_episode(3, 600).write_to_file(out).unwrap();
+    }
+
     #[test]
     fn writer_accumulates_frames() {
         let mut w = ReplayWriter::new(Value::Null, 1, Value::Null);

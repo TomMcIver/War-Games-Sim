@@ -295,14 +295,18 @@ table.stats tr:last-child td { border-bottom: 0; }
   .side { border-left: 0; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); align-items: start; }
   .meta { display: none; }
 }
+@media (max-width: 720px) {
+  .transport { flex-wrap: wrap; gap: 8px 10px; padding: 8px 12px; }
+  #scrub { order: 5; flex-basis: 100%; }
+  .clock { min-width: 0; margin-left: auto; }
+}
 @media (max-width: 560px) {
   .topbar { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
   .topbar-actions { width: 100%; }
   .outcome { margin-right: auto; }
-  .transport { flex-wrap: wrap; gap: 8px; padding: 8px 12px; }
-  #scrub { order: 5; flex-basis: 100%; }
-  .clock { min-width: 0; margin-left: auto; }
   .speed span { display: none; }
+  .tbtn { width: 32px; }
+  .side { padding: 8px; grid-template-columns: minmax(0, 1fr); }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
