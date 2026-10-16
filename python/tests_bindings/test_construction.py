@@ -89,6 +89,44 @@ def test_wrong_types_raise_type_error(kwargs):
         warsim.VecEnv(**args)
 
 
+def test_reward_kwargs_accepted(make_env):
+    env = make_env(
+        2,
+        reward_win=2.0,
+        reward_loss=-2.0,
+        reward_draw=-0.5,
+        reward_damage_dealt=0.3,
+        reward_kill=0.1,
+        reward_damage_taken=0.0,
+        reward_time_penalty=0.001,
+        reward_ammo_waste=0.0,
+        shaping_scale=0.25,
+    )
+    assert env.n_envs == 2
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"reward_win": math.nan}, "reward_win"),
+        ({"reward_loss": math.inf}, "reward_loss"),
+        ({"reward_draw": 1e300}, "reward_draw"),
+        ({"reward_kill": -0.1}, "reward_kill"),
+        ({"reward_time_penalty": -1.0}, "reward_time_penalty"),
+        ({"shaping_scale": -0.5}, "shaping_scale"),
+    ],
+)
+def test_invalid_reward_kwargs_raise_value_error(kwargs, match):
+    with pytest.raises(ValueError, match=match):
+        warsim.VecEnv(2, **kwargs)
+
+
+def test_reward_kwargs_are_keyword_only():
+    # 8th positional argument would be reward_win if it were positional.
+    with pytest.raises(TypeError):
+        warsim.VecEnv(2, 2, "arena", 600, 0, 0.1, None, 1.0)
+
+
 def test_unknown_keyword_raises_type_error():
     with pytest.raises(TypeError):
         warsim.VecEnv(2, not_a_real_option=1)

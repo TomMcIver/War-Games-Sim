@@ -19,15 +19,14 @@ use sim_core::{
     TOKEN_FEATS,
 };
 
-use crate::config::{validate, RawArgs, Settings};
+use crate::config::{validate, RawArgs, RewardArgs, Settings};
 use crate::convert::{read_actions, to_bool_numpy, to_numpy};
 
 #[pyclass(name = "VecEnv", module = "warsim")]
 pub struct PyVecEnv {
-    /// `None` once `close()` has been called.
+    /// `None` once `close()` has been called. Owns the dedicated rayon pool
+    /// when `num_threads` is given (else rayon's global pool is used).
     inner: Option<VecEnv>,
-    /// Dedicated rayon pool when `num_threads` is given, else rayon's global pool.
-    pool: Option<rayon::ThreadPool>,
     n_envs: usize,
     team_size: usize,
     n_units: usize,
@@ -43,10 +42,15 @@ pub struct PyVecEnv {
 
 #[pymethods]
 impl PyVecEnv {
+    /// Reward overrides are keyword-only; `None` keeps the sim-core default
+    /// (`sim_core::reward::RewardConfig`).
     #[new]
     #[pyo3(signature = (
         n_envs, team_size=2, map_kind="arena", max_ticks=600, seed=0,
-        tick_seconds=0.1, num_threads=None
+        tick_seconds=0.1, num_threads=None, *,
+        reward_win=None, reward_loss=None, reward_draw=None,
+        reward_damage_dealt=None, reward_kill=None, reward_damage_taken=None,
+        reward_time_penalty=None, reward_ammo_waste=None, shaping_scale=None
     ))]
     #[allow(clippy::too_many_arguments)]
     fn new(
@@ -58,6 +62,15 @@ impl PyVecEnv {
         seed: i128,
         tick_seconds: f64,
         num_threads: Option<i128>,
+        reward_win: Option<f64>,
+        reward_loss: Option<f64>,
+        reward_draw: Option<f64>,
+        reward_damage_dealt: Option<f64>,
+        reward_kill: Option<f64>,
+        reward_damage_taken: Option<f64>,
+        reward_time_penalty: Option<f64>,
+        reward_ammo_waste: Option<f64>,
+        shaping_scale: Option<f64>,
     ) -> PyResult<Self> {
         let raw = RawArgs {
             n_envs,
@@ -67,6 +80,17 @@ impl PyVecEnv {
             seed,
             tick_seconds,
             num_threads,
+            reward: RewardArgs {
+                win: reward_win,
+                loss: reward_loss,
+                draw: reward_draw,
+                damage_dealt: reward_damage_dealt,
+                kill: reward_kill,
+                damage_taken: reward_damage_taken,
+                time_penalty: reward_time_penalty,
+                ammo_waste: reward_ammo_waste,
+                shaping_scale,
+            },
         };
         let settings = validate(&raw).map_err(PyValueError::new_err)?;
         Self::build(py, settings)
@@ -74,10 +98,9 @@ impl PyVecEnv {
 
     /// Reset every env. Returns the observation dict.
     fn reset<'py>(&mut self, py: Python<'py>) -> PyResult<Bound<'py, PyDict>> {
-        let pool = self.pool.as_ref();
         let inner = self.inner.as_mut().ok_or_else(closed_error)?;
         let outcome = py.detach(|| {
-            run_guarded(pool, || {
+            run_guarded(|| {
                 inner.reset();
             })
         });
@@ -109,11 +132,10 @@ impl PyVecEnv {
                 "VecEnv.step() called before reset() (or after a failed call); call reset() first",
             ));
         }
-        let pool = self.pool.as_ref();
         let acts = self.actions.as_slice();
         let inner = self.inner.as_mut().ok_or_else(closed_error)?;
         let outcome = py.detach(|| {
-            run_guarded(pool, || {
+            run_guarded(|| {
                 inner.step(acts);
             })
         });
@@ -137,7 +159,6 @@ impl PyVecEnv {
     /// Release the sim (idempotent). Further `reset`/`step` calls raise.
     fn close(&mut self) {
         self.inner = None;
-        self.pool = None;
         self.actions = Vec::new();
     }
 
@@ -198,21 +219,16 @@ impl PyVecEnv {
 
 impl PyVecEnv {
     fn build(py: Python<'_>, s: Settings) -> PyResult<Self> {
-        let pool = s
-            .num_threads
-            .map(|n| {
-                rayon::ThreadPoolBuilder::new()
-                    .num_threads(n)
-                    .thread_name(|i| format!("warsim-{i}"))
-                    .build()
-                    .map_err(|e| PyRuntimeError::new_err(format!("cannot start thread pool: {e}")))
-            })
-            .transpose()?;
         let (n_envs, seed) = (s.n_envs, s.seed);
         let cfg = s.cfg.clone();
-        let inner = py
-            .detach(|| run_guarded(pool.as_ref(), move || VecEnv::new(n_envs, cfg, seed)))
+        let mut inner = py
+            .detach(|| run_guarded(move || VecEnv::new(n_envs, cfg, seed)))
             .map_err(|msg| core_panic_error("VecEnv::new", &msg))?;
+        if let Some(n) = s.num_threads {
+            inner
+                .set_threads(n)
+                .map_err(|e| PyRuntimeError::new_err(format!("cannot start thread pool: {e}")))?;
+        }
         let n_units = inner.n_units();
         if n_units != 2 * s.cfg.team_size {
             return Err(PyRuntimeError::new_err(format!(
@@ -222,7 +238,6 @@ impl PyVecEnv {
         }
         Ok(Self {
             inner: Some(inner),
-            pool,
             n_envs,
             team_size: s.cfg.team_size,
             n_units,
@@ -270,18 +285,11 @@ impl PyVecEnv {
     }
 }
 
-/// Run `f` (on the dedicated pool if any), converting a panic into its message.
-fn run_guarded<T: Send>(
-    pool: Option<&rayon::ThreadPool>,
-    f: impl FnOnce() -> T + Send,
-) -> Result<T, String> {
+/// Run `f`, converting a panic into its message.
+fn run_guarded<T>(f: impl FnOnce() -> T) -> Result<T, String> {
     // AssertUnwindSafe: after a panic the env is flagged `needs_reset` and never
     // observed in its possibly-inconsistent state.
-    catch_unwind(AssertUnwindSafe(move || match pool {
-        Some(p) => p.install(f),
-        None => f(),
-    }))
-    .map_err(panic_message)
+    catch_unwind(AssertUnwindSafe(f)).map_err(panic_message)
 }
 
 fn panic_message(payload: Box<dyn Any + Send>) -> String {

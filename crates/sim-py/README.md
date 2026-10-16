@@ -45,7 +45,8 @@ import numpy as np
 import warsim
 
 env = warsim.VecEnv(n_envs=64, team_size=2, map_kind="arena",
-                    max_ticks=600, seed=0, tick_seconds=0.1, num_threads=None)
+                    max_ticks=600, seed=0, tick_seconds=0.1, num_threads=None,
+                    shaping_scale=1.0)  # + other reward_* overrides, see below
 obs = env.reset()                       # dict of float32 arrays
 E, U = env.n_envs, env.n_units          # U = 2 * team_size
 actions = np.zeros((E, U, 5), dtype=np.uint8)   # heads: env.action_dims == [3, 3, 3, 2, 2]
@@ -79,7 +80,15 @@ Type stubs ship in `warsim.pyi`.
   keep running. Calling methods of the *same* env from two threads at once raises
   `RuntimeError` (already borrowed) instead of racing.
 - **Threads**: `num_threads=None` uses rayon's global pool (all cores, or
-  `RAYON_NUM_THREADS`); an integer gives this env a dedicated pool of that size.
+  `RAYON_NUM_THREADS`); an integer gives this env a dedicated pool of that size
+  (`sim_core::VecEnv::set_threads`). Results are identical for any thread count.
+- **Rewards**: keyword-only overrides of `sim_core::reward::RewardConfig`;
+  `None` (default) keeps the core default: `reward_win`, `reward_loss`,
+  `reward_draw` (any finite float), `reward_damage_dealt`, `reward_kill`,
+  `reward_damage_taken`, `reward_time_penalty`, `reward_ammo_waste`,
+  `shaping_scale` (finite, `>= 0`). E.g. `VecEnv(64, shaping_scale=0.0)` trains on
+  the pure win/loss signal. They are fixed for the env's lifetime: to anneal
+  `shaping_scale`, build a new `VecEnv` (sim-core has no setter yet).
 - **Validation** (before sim-core is touched):
   - constructor: bad ranges raise `ValueError` (`n_envs` 1..2^20, `team_size`
     1..MAX_TEAM_SIZE, `map_kind` in `MAP_KINDS`, `max_ticks` 1..2^32-1,

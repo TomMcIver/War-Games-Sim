@@ -38,6 +38,16 @@ class VecEnv:
         seed: int = 0,
         tick_seconds: float = 0.1,
         num_threads: int | None = None,
+        *,
+        reward_win: float | None = None,
+        reward_loss: float | None = None,
+        reward_draw: float | None = None,
+        reward_damage_dealt: float | None = None,
+        reward_kill: float | None = None,
+        reward_damage_taken: float | None = None,
+        reward_time_penalty: float | None = None,
+        reward_ammo_waste: float | None = None,
+        shaping_scale: float | None = None,
     ) -> None: ...
     def reset(self) -> Obs: ...
     def step(

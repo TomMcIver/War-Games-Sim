@@ -17,4 +17,3 @@ doctest = false
 sim-core = { path = "../sim-core" }
 pyo3 = { version = "=0.30.1", features = ["abi3-py311"] }
 numpy = "=0.30.0"
-rayon = "1.10"

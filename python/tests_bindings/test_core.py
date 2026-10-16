@@ -138,6 +138,22 @@ def test_auto_reset_on_timeout(make_env):
     assert period == done_steps[0][1] == done_steps[1][1]
 
 
+def test_reward_kwargs_reach_the_engine(make_env):
+    """shaping off + custom draw reward: no-op episodes pay exactly reward_draw at timeout."""
+    max_ticks = 4
+    env = make_env(2, team_size=1, max_ticks=max_ticks, seed=0,
+                   shaping_scale=0.0, reward_draw=0.5)
+    env.reset()
+    for step in range(1, max_ticks + 1):
+        _, rewards, dones, infos = env.step(noop_actions(env))
+        if dones.all():
+            assert (infos["winner"] == -1).all()
+            np.testing.assert_array_equal(rewards, np.full_like(rewards, 0.5))
+            return
+        np.testing.assert_array_equal(rewards, np.zeros_like(rewards))
+    pytest.fail(f"episode did not end within max_ticks={max_ticks}")
+
+
 def test_returned_arrays_are_fresh_copies(make_env):
     env = make_env(2, seed=0)
     obs0 = env.reset()
