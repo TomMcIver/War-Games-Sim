@@ -17,9 +17,22 @@ pub struct Unit {
     pub cooldown: u32,
 }
 
+/// A shot fired this tick (for replays/tracers). `hit` = unit that was struck.
+#[derive(Clone, Debug)]
+pub struct ShotEvent {
+    pub shooter: UnitId,
+    /// Where the shot ended (hit point or max range / wall impact).
+    pub x: f32,
+    pub y: f32,
+    pub floor: u8,
+    pub hit: Option<UnitId>,
+}
+
 #[derive(Clone, Debug)]
 pub struct World {
     pub map: GameMap,
     pub units: Vec<Unit>,
     pub tick: u64,
+    /// Shots fired during the most recent tick.
+    pub shots: Vec<ShotEvent>,
 }

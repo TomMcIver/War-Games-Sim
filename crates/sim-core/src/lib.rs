@@ -14,4 +14,4 @@ pub mod world;
 
 pub use env::{Env, EnvConfig, StepResult};
 pub use types::*;
-pub use vec_env::VecEnv;
+pub use vec_env::{VecEnv, VecEnvBuffers};
