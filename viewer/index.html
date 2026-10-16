@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>War-Games-Sim Replay</title>
+  <meta name="description" content="Browser replay viewer for War-Games-Sim episodes.">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span class="brand-name">WARSIM</span>
+        <span class="brand-sub">replay</span>
+      </div>
+      <div class="meta" id="meta" aria-live="polite">No replay loaded</div>
+      <div class="topbar-actions">
+        <span class="outcome" id="outcome" hidden></span>
+        <label class="btn" title="Open a replay JSON file (or drop one anywhere)">
+          <input type="file" id="file-input" accept=".json,application/json" hidden>
+          Open replay
+        </label>
+        <button class="btn btn-ghost" id="btn-sample" type="button" title="Load the bundled demo replay">Sample</button>
+        <button class="btn btn-ghost btn-icon" id="btn-help" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
+      </div>
+    </header>
+
+    <main class="stage" id="stage">
+      <canvas id="canvas" aria-label="Replay map"></canvas>
+
+      <div class="floor-picker" id="floor-picker" role="group" aria-label="Floor"></div>
+
+      <div class="view-tools" role="group" aria-label="View">
+        <button class="tool" id="btn-zoom-in" type="button" title="Zoom in (wheel)" aria-label="Zoom in">+</button>
+        <button class="tool" id="btn-zoom-out" type="button" title="Zoom out (wheel)" aria-label="Zoom out">&minus;</button>
+        <button class="tool" id="btn-fit" type="button" title="Fit map (0)" aria-label="Fit map">&#x2922;</button>
+      </div>
+
+      <div class="follow-chip" id="follow-chip" hidden>
+        <span id="follow-label"></span>
+        <button type="button" id="btn-unfollow" aria-label="Stop following">&times;</button>
+      </div>
+
+      <div class="hover-line" id="hover-line"></div>
+      <div class="tooltip" id="tooltip" role="tooltip" hidden></div>
+
+      <div class="empty" id="empty">
+        <p class="empty-title">Drop a replay JSON here</p>
+        <p>or use <b>Open replay</b> / <b>Sample</b></p>
+      </div>
+      <div class="drop-overlay" id="drop-overlay" hidden><span>Release to load replay</span></div>
+      <div class="error" id="error" role="alert" hidden>
+        <pre id="error-text"></pre>
+        <button type="button" id="btn-error-close" aria-label="Dismiss">&times;</button>
+      </div>
+    </main>
+
+    <aside class="side" id="side">
+      <section class="panel">
+        <h2>Forces</h2>
+        <div id="teams"></div>
+      </section>
+      <section class="panel">
+        <h2>Combat</h2>
+        <table class="stats" id="combat"></table>
+      </section>
+      <section class="panel">
+        <h2>Display</h2>
+        <label class="check"><input type="checkbox" id="opt-ghost" checked> Show floor below</label>
+        <label class="check"><input type="checkbox" id="opt-others" checked> Show units on other floors</label>
+        <label class="check"><input type="checkbox" id="opt-tracers" checked> Shot tracers</label>
+        <label class="check"><input type="checkbox" id="opt-labels" checked> Unit ids</label>
+        <label class="check"><input type="checkbox" id="opt-smooth" checked> Smooth playback</label>
+      </section>
+      <section class="panel">
+        <h2>Legend</h2>
+        <ul class="legend">
+          <li><i class="sw sw-floor"></i>Floor</li>
+          <li><i class="sw sw-wall"></i>Wall</li>
+          <li><i class="sw sw-door-c"></i>Door closed</li>
+          <li><i class="sw sw-door-o"></i>Door open</li>
+          <li><i class="sw sw-window"></i>Window</li>
+          <li><i class="sw sw-stairs"></i>Stairs &#9650;/&#9660;</li>
+        </ul>
+      </section>
+    </aside>
+
+    <footer class="transport" id="transport">
+      <div class="buttons" role="group" aria-label="Playback">
+        <button class="tbtn" id="btn-start" type="button" title="First frame (Home)" aria-label="First frame">&#x23EE;</button>
+        <button class="tbtn" id="btn-back" type="button" title="Step back (&larr;, Shift = 10)" aria-label="Step back">&#x23F4;&#x23F4;</button>
+        <button class="tbtn tbtn-play" id="btn-play" type="button" title="Play / pause (Space)" aria-label="Play">&#x25B6;</button>
+        <button class="tbtn" id="btn-fwd" type="button" title="Step forward (&rarr;, Shift = 10)" aria-label="Step forward">&#x23F5;&#x23F5;</button>
+        <button class="tbtn" id="btn-end" type="button" title="Last frame (End)" aria-label="Last frame">&#x23ED;</button>
+      </div>
+      <input type="range" id="scrub" min="0" max="0" value="0" step="1" aria-label="Timeline">
+      <div class="clock" aria-live="off">
+        <span class="tick" id="tick-label">tick &ndash;</span>
+        <span class="time" id="time-label"></span>
+      </div>
+      <label class="speed" title="Playback speed (+ / -)">
+        <span>Speed</span>
+        <select id="speed">
+          <option value="0.25">0.25&times;</option>
+          <option value="0.5">0.5&times;</option>
+          <option value="1" selected>1&times;</option>
+          <option value="2">2&times;</option>
+          <option value="4">4&times;</option>
+          <option value="8">8&times;</option>
+          <option value="16">16&times;</option>
+        </select>
+      </label>
+    </footer>
+  </div>
+
+  <div class="help" id="help" hidden>
+    <div class="help-card" role="dialog" aria-modal="true" aria-labelledby="help-title">
+      <h2 id="help-title">Keyboard &amp; mouse</h2>
+      <dl>
+        <dt>Space</dt><dd>Play / pause</dd>
+        <dt>&larr; &rarr;</dt><dd>Step one frame (Shift: 10)</dd>
+        <dt>Home / End</dt><dd>First / last frame</dd>
+        <dt>+ / &minus;</dt><dd>Faster / slower</dd>
+        <dt>[ / ] &nbsp;PgDn / PgUp</dt><dd>Floor down / up</dd>
+        <dt>1&ndash;9</dt><dd>Follow unit 0&ndash;8 (again to stop)</dd>
+        <dt>F / Esc</dt><dd>Follow hovered unit / stop following</dd>
+        <dt>0</dt><dd>Fit map to view</dd>
+        <dt>Wheel / drag</dt><dd>Zoom / pan</dd>
+        <dt>Click unit</dt><dd>Follow it</dd>
+      </dl>
+      <button class="btn" type="button" id="btn-help-close">Close</button>
+    </div>
+  </div>
+
+  <script src="replay-model.js"></script>
+  <!-- Bundled demo as a script so the viewer works from file:// (no fetch). -->
+  <script src="sample_replay.js"></script>
+  <script src="viewer.js"></script>
+</body>
+</html>

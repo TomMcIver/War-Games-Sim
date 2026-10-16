@@ -1,0 +1,98 @@
+# Mirrors infra/checks.sh (what `bash infra/test-all.sh` runs locally in Podman).
+# Python steps are guarded by file-exists checks so CI stays green while
+# components (crates/sim-py, python/tests_rl) are still landing.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  rust:
+    name: Rust (fmt, clippy, test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: cargo fmt --check
+        run: cargo fmt --all -- --check
+      - name: cargo clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: cargo test
+        run: cargo test --workspace
+
+  python:
+    name: Python (sim-py bindings, rl trainer)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Detect components
+        id: has
+        run: |
+          flag() { if [ -e "$2" ]; then echo "$1=true"; else echo "$1=false"; fi >> "$GITHUB_OUTPUT"; }
+          flag sim_py crates/sim-py/pyproject.toml
+          flag bindings_tests python/tests_bindings
+          flag rl_tests python/tests_rl
+          cat "$GITHUB_OUTPUT"
+      - uses: actions/setup-python@v5
+        if: steps.has.outputs.sim_py == 'true' || steps.has.outputs.rl_tests == 'true'
+        with:
+          python-version: "3.11"
+      - name: Create venv
+        if: steps.has.outputs.sim_py == 'true' || steps.has.outputs.rl_tests == 'true'
+        run: |
+          python -m venv .venv
+          echo "VIRTUAL_ENV=$PWD/.venv" >> "$GITHUB_ENV"
+          echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Install Python deps
+        if: steps.has.outputs.sim_py == 'true' || steps.has.outputs.rl_tests == 'true'
+        run: |
+          python -m pip install --upgrade pip
+          pip install maturin numpy pytest
+          if [ "${{ steps.has.outputs.rl_tests }}" = "true" ]; then
+            pip install torch --index-url https://download.pytorch.org/whl/cpu
+          fi
+      - uses: dtolnay/rust-toolchain@stable
+        if: steps.has.outputs.sim_py == 'true'
+      - uses: Swatinem/rust-cache@v2
+        if: steps.has.outputs.sim_py == 'true'
+        with:
+          key: sim-py
+      - name: Build sim-py (maturin develop)
+        if: steps.has.outputs.sim_py == 'true'
+        working-directory: crates/sim-py
+        run: maturin develop --release
+      - name: pytest python/tests_bindings
+        if: steps.has.outputs.sim_py == 'true' && steps.has.outputs.bindings_tests == 'true'
+        run: python -m pytest python/tests_bindings -q -rs
+      - name: pytest python/tests_rl
+        if: steps.has.outputs.rl_tests == 'true'
+        working-directory: python
+        run: PYTHONPATH="$PWD" python -m pytest tests_rl -q
+
+  viewer:
+    name: Viewer (node --test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Viewer model tests (no npm deps)
+        run: node --test viewer/tests/*.test.js
