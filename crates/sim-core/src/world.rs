@@ -7,8 +7,12 @@
 //! - `yaw` is in radians, normalised to `[-PI, PI)`. Facing vector is
 //!   `(cos yaw, sin yaw)`. "Left" is `+90deg` from facing: turning left
 //!   increases yaw, strafing left moves along `(-sin yaw, cos yaw)`.
-//! - Units are circles of radius `UnitStats::radius`. Dead units neither
-//!   move, block movement nor can be hit.
+//! - Units are circles of radius `UnitStats::radius` (must stay < 0.5: map
+//!   doorways and corridors are one tile wide). Dead units neither move,
+//!   block movement nor can be hit.
+//! - Wall collision, doors and stairs use the map API (`slide_move`,
+//!   `circle_fits`, `toggle_door`, `stairs_destination`); this file only
+//!   adds unit-vs-unit collision and the engine rules on top.
 
 use std::f32::consts::{PI, TAU};
 
@@ -19,9 +23,6 @@ use crate::types::{Action, Pos, TeamId, UnitId};
 pub const DEFAULT_MAX_HP: f32 = 100.0;
 /// Default rounds per unit per episode (no reloads).
 pub const DEFAULT_AMMO: u32 = 30;
-
-/// Small epsilon used to keep units strictly off wall edges.
-const EPS: f32 = 1e-4;
 
 /// Body/movement physics shared by all units. Speeds are per second and
 /// get scaled by `EnvConfig::tick_seconds`.
@@ -194,26 +195,28 @@ impl World {
         end.x != start.x || end.y != start.y
     }
 
-    /// Furthest free position along `(dx, dy)` from unit i's position
-    /// (bisection on contact so units end up flush against obstacles).
+    /// Furthest free position along the axis move `(dx, dy)` from unit i's
+    /// position: walls are resolved by the map (sliding up to them), then
+    /// other units by bisection on the remaining wall-free segment.
     fn slide_axis(&self, i: usize, dx: f32, dy: f32, radius: f32) -> Pos {
         const BISECT_STEPS: usize = 8;
         let p = self.units[i].pos;
-        let at = |t: f32| Pos {
-            x: p.x + dx * t,
-            y: p.y + dy * t,
-            floor: p.floor,
-        };
         if dx == 0.0 && dy == 0.0 {
             return p;
         }
-        if !self.blocked(i, at(1.0), radius) {
-            return at(1.0);
+        let q = self.map.slide_move(p, dx, dy, radius);
+        if !self.units_block(i, q, radius) {
+            return q;
         }
+        let at = |t: f32| Pos {
+            x: p.x + (q.x - p.x) * t,
+            y: p.y + (q.y - p.y) * t,
+            floor: p.floor,
+        };
         let (mut lo, mut hi) = (0.0f32, 1.0f32);
         for _ in 0..BISECT_STEPS {
             let mid = 0.5 * (lo + hi);
-            if self.blocked(i, at(mid), radius) {
+            if self.units_block(i, at(mid), radius) {
                 hi = mid;
             } else {
                 lo = mid;
@@ -222,13 +225,10 @@ impl World {
         at(lo)
     }
 
-    /// Would unit `i` standing at `p` collide with a wall or another living
-    /// unit? Overlaps with units that the move does not make worse are
-    /// allowed so units can never get permanently stuck together.
-    fn blocked(&self, i: usize, p: Pos, radius: f32) -> bool {
-        if circle_hits_blocking_tile(&self.map, p, radius) {
-            return true;
-        }
+    /// Would unit `i` standing at `p` overlap another living unit? Overlaps
+    /// that the move does not make worse are allowed so units can never get
+    /// permanently stuck together.
+    fn units_block(&self, i: usize, p: Pos, radius: f32) -> bool {
         let cur = self.units[i].pos;
         let min_d2 = (2.0 * radius) * (2.0 * radius);
         self.units.iter().enumerate().any(|(j, o)| {
@@ -238,13 +238,6 @@ impl World {
             let d2_new = dist2(p, o.pos);
             d2_new < min_d2 && d2_new < dist2(cur, o.pos)
         })
-    }
-
-    /// Is any living unit's body overlapping tile `(tx, ty, f)`?
-    fn tile_occupied(&self, tx: i32, ty: i32, f: u8, radius: f32) -> bool {
-        self.units
-            .iter()
-            .any(|u| u.alive && u.pos.floor == f && circle_overlaps_tile(u.pos, radius, tx, ty))
     }
 
     /// `interact=1` for unit `i`: use stairs when standing on them, else
@@ -259,21 +252,24 @@ impl World {
 
     fn use_stairs(&mut self, i: usize, radius: f32) -> InteractOutcome {
         let p = self.units[i].pos;
-        let Some(dest) = stairs_destination(&self.map, p) else {
+        let (tx, ty) = (p.x.floor() as i32, p.y.floor() as i32);
+        let Some((_, _, nf)) = self.map.stairs_destination(tx, ty, i32::from(p.floor)) else {
             return InteractOutcome::None;
         };
+        let floor = nf as u8;
         // Prefer the exact same (x, y); fall back to the stairs tile centre.
+        let exact = Pos { floor, ..p };
         let centre = Pos {
-            x: p.x.floor() + 0.5,
-            y: p.y.floor() + 0.5,
-            floor: dest.floor,
+            x: tx as f32 + 0.5,
+            y: ty as f32 + 0.5,
+            floor,
         };
-        let free = [dest, centre].into_iter().find(|&c| {
-            !circle_hits_blocking_tile(&self.map, c, radius)
+        let free = [exact, centre].into_iter().find(|&c| {
+            self.map.circle_fits(c.x, c.y, nf, radius)
                 && !self.units.iter().enumerate().any(|(j, o)| {
                     j != i
                         && o.alive
-                        && o.pos.floor == c.floor
+                        && o.pos.floor == floor
                         && dist2(c, o.pos) < 4.0 * radius * radius
                 })
         });
@@ -292,19 +288,25 @@ impl World {
         let reach = radius + 0.5;
         let tx = (u.pos.x + fx * reach).floor() as i32;
         let ty = (u.pos.y + fy * reach).floor() as i32;
-        let f = u.pos.floor;
-        match self.map.tile(tx, ty, f as i32) {
-            Tile::DoorClosed => {
-                set_door(&mut self.map, tx, ty, f, true);
-                InteractOutcome::DoorOpened
-            }
-            // Never close a door on top of somebody.
-            Tile::DoorOpen if !self.tile_occupied(tx, ty, f, radius) => {
-                set_door(&mut self.map, tx, ty, f, false);
-                InteractOutcome::DoorClosed
-            }
-            _ => InteractOutcome::None,
+        let f = i32::from(u.pos.floor);
+        let was = self.map.tile(tx, ty, f);
+        if !self.map.toggle_door(tx, ty, f) {
+            return InteractOutcome::None;
         }
+        if was == Tile::DoorClosed {
+            return InteractOutcome::DoorOpened;
+        }
+        // Never close a door on top of somebody: undo if any body overlaps it.
+        let crushed = self.units.iter().any(|o| {
+            o.alive
+                && i32::from(o.pos.floor) == f
+                && !self.map.circle_fits(o.pos.x, o.pos.y, f, radius)
+        });
+        if crushed {
+            self.map.toggle_door(tx, ty, f);
+            return InteractOutcome::None;
+        }
+        InteractOutcome::DoorClosed
     }
 }
 
@@ -324,63 +326,6 @@ pub(crate) fn wrap_angle(a: f32) -> f32 {
 fn dist2(a: Pos, b: Pos) -> f32 {
     let (dx, dy) = (a.x - b.x, a.y - b.y);
     dx * dx + dy * dy
-}
-
-fn circle_overlaps_tile(p: Pos, radius: f32, tx: i32, ty: i32) -> bool {
-    let cx = p.x.clamp(tx as f32, tx as f32 + 1.0);
-    let cy = p.y.clamp(ty as f32, ty as f32 + 1.0);
-    let (dx, dy) = (p.x - cx, p.y - cy);
-    dx * dx + dy * dy < (radius + EPS) * (radius + EPS)
-}
-
-fn circle_hits_blocking_tile(map: &GameMap, p: Pos, radius: f32) -> bool {
-    let f = p.floor as i32;
-    let (x0, x1) = ((p.x - radius).floor() as i32, (p.x + radius).floor() as i32);
-    let (y0, y1) = ((p.y - radius).floor() as i32, (p.y + radius).floor() as i32);
-    (y0..=y1).any(|ty| {
-        (x0..=x1)
-            .any(|tx| blocks_movement(map, tx, ty, f) && circle_overlaps_tile(p, radius, tx, ty))
-    })
-}
-
-// ---------------------------------------------------------------------------
-// MAP-HOOKs: every map query used by movement/interaction goes through these.
-// Swap in map-agent's richer API (`can_move`, `toggle_door`,
-// `stairs_destination`) here when it lands.
-// ---------------------------------------------------------------------------
-
-// MAP-HOOK: tile-level movement blocking (windows, walls, closed doors, void).
-fn blocks_movement(map: &GameMap, x: i32, y: i32, f: i32) -> bool {
-    !map.is_walkable(x, y, f)
-}
-
-// MAP-HOOK: StairsUp at (x,y,f) pairs with StairsDown at (x,y,f+1).
-fn stairs_destination(map: &GameMap, p: Pos) -> Option<Pos> {
-    let (tx, ty, f) = (p.x.floor() as i32, p.y.floor() as i32, p.floor as i32);
-    let target = match map.tile(tx, ty, f) {
-        Tile::StairsUp => (f + 1, Tile::StairsDown),
-        Tile::StairsDown => (f - 1, Tile::StairsUp),
-        _ => return None,
-    };
-    let (nf, want) = target;
-    if map.tile(tx, ty, nf) != want {
-        return None;
-    }
-    Some(Pos {
-        x: p.x,
-        y: p.y,
-        floor: nf as u8,
-    })
-}
-
-// MAP-HOOK: open/close a door tile.
-fn set_door(map: &mut GameMap, x: i32, y: i32, f: u8, open: bool) {
-    let t = if open {
-        Tile::DoorOpen
-    } else {
-        Tile::DoorClosed
-    };
-    map.set_tile(x as usize, y as usize, f as usize, t);
 }
 
 #[cfg(test)]

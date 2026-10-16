@@ -7,9 +7,9 @@
 //!   `s = spread (+ moving_spread if the shooter moved this tick)`, drawn
 //!   from the env's single ChaCha8 RNG in unit-index order.
 //! - It hits the nearest living **enemy** whose body circle it crosses
-//!   before any sight-blocking tile (walls, closed doors, void; windows do
-//!   not stop bullets), within `max_range`, and to which the shooter has
-//!   line of sight. **Friendly fire is OFF**: bullets pass through allies.
+//!   before the first bullet-blocking tile (`GameMap::raycast`: walls,
+//!   closed doors, void; windows do not stop bullets), within `max_range`,
+//!   and to which the shooter has exact `GameMap::line_of_sight`. **Friendly fire is OFF**: bullets pass through allies.
 //! - Damage falls off linearly from `damage` at `falloff_start` to
 //!   `damage * min_damage_frac` at `max_range`.
 //! - All shots in a tick are simultaneous: hittability is decided by who
@@ -19,7 +19,6 @@
 
 use rand::Rng;
 
-use crate::map::GameMap;
 use crate::reward::TickEvents;
 use crate::types::Pos;
 use crate::world::{ShotEvent, World, DEFAULT_AMMO};
@@ -74,6 +73,11 @@ impl WeaponStats {
 /// Resolve this tick's shooting. `wants_shoot[i]` is unit i's shoot head,
 /// `moved[i]` whether it moved this tick. `radius` is the unit body radius.
 /// Appends to `world.shots`, applies damage/deaths and records events.
+///
+/// Hittability and the right to fire come from `ev.was_alive` (alive when
+/// the tick began; nothing kills before this phase). Damage is applied to
+/// `hp` immediately, but `alive` only flips after every shot is resolved,
+/// which keeps the phase simultaneous without scratch allocations.
 pub(crate) fn resolve_shots<R: Rng>(
     world: &mut World,
     wants_shoot: &[bool],
@@ -84,13 +88,11 @@ pub(crate) fn resolve_shots<R: Rng>(
     ev: &mut TickEvents,
 ) {
     let n = world.units.len();
-    let targetable: Vec<bool> = world.units.iter().map(|u| u.alive).collect();
-    let mut pending_hp: Vec<f32> = world.units.iter().map(|u| u.hp).collect();
-
     for i in 0..n {
         let u = &world.units[i];
         let wants = wants_shoot.get(i).copied().unwrap_or(false);
-        if !wants || !targetable[i] || u.ammo == 0 || u.cooldown > 0 {
+        let can_act = ev.was_alive.get(i).copied().unwrap_or(false);
+        if !wants || !can_act || u.ammo == 0 || u.cooldown > 0 {
             continue;
         }
         let is_moving = moved.get(i).copied().unwrap_or(false);
@@ -104,21 +106,27 @@ pub(crate) fn resolve_shots<R: Rng>(
         let dir = (angle.cos(), angle.sin());
         let origin = u.pos;
 
-        let wall_t = wall_distance(&world.map, origin, dir, weapon.max_range);
+        // Exact bullet ray from the map; windows don't stop it.
+        let wall = world.map.raycast(origin, angle, weapon.max_range);
         let hit = (0..n)
             .filter(|&j| {
                 let o = &world.units[j];
-                targetable[j] && o.team != u.team && o.pos.floor == origin.floor
+                ev.was_alive[j] && o.team != u.team && o.pos.floor == origin.floor
             })
             .filter_map(|j| ray_circle(origin, dir, world.units[j].pos, radius).map(|t| (j, t)))
-            .filter(|&(j, t)| t < wall_t && has_los(&world.map, origin, world.units[j].pos))
+            .filter(|&(j, t)| {
+                t < wall.distance && world.map.line_of_sight(origin, world.units[j].pos)
+            })
             .min_by(|a, b| a.1.total_cmp(&b.1));
 
-        let end_t = hit.map_or(wall_t, |(_, t)| t);
+        let (x, y) = match hit {
+            Some((_, t)) => (origin.x + dir.0 * t, origin.y + dir.1 * t),
+            None => (wall.x, wall.y),
+        };
         world.shots.push(ShotEvent {
             shooter: i,
-            x: origin.x + dir.0 * end_t,
-            y: origin.y + dir.1 * end_t,
+            x,
+            y,
             floor: origin.floor,
             hit: hit.map(|(j, _)| j),
         });
@@ -129,12 +137,13 @@ pub(crate) fn resolve_shots<R: Rng>(
         match hit {
             Some((j, t)) => {
                 let dmg = weapon.damage_at(t);
-                let before = pending_hp[j];
+                let target = &mut world.units[j];
+                let before = target.hp;
+                target.hp = (before - dmg).max(0.0);
                 let applied = dmg.min(before.max(0.0));
-                pending_hp[j] = before - dmg;
                 ev.damage_dealt[i] += applied;
                 ev.damage_taken[j] += applied;
-                if before > 0.0 && pending_hp[j] <= 0.0 {
+                if before > 0.0 && before - dmg <= 0.0 {
                     ev.kills[i] += 1;
                 }
             }
@@ -142,13 +151,9 @@ pub(crate) fn resolve_shots<R: Rng>(
         }
     }
 
-    for (u, &hp) in world.units.iter_mut().zip(&pending_hp) {
-        if u.alive {
-            u.hp = hp.max(0.0);
-            if hp <= 0.0 {
-                u.alive = false;
-            }
-        }
+    for u in world.units.iter_mut().filter(|u| u.alive && u.hp <= 0.0) {
+        u.hp = 0.0;
+        u.alive = false;
     }
 }
 
@@ -171,62 +176,6 @@ fn ray_circle(origin: Pos, dir: (f32, f32), c: Pos, r: f32) -> Option<f32> {
     Some((proj - (r * r - perp2).max(0.0).sqrt()).max(0.0))
 }
 
-// ---------------------------------------------------------------------------
-// MAP-HOOKs: every map query used by combat goes through these.
-// When map-agent's `raycast(from, angle, max_range)` / exact LOS land, swap
-// them in here.
-// ---------------------------------------------------------------------------
-
-// MAP-HOOK: does this tile stop bullets? (Windows don't.)
-fn blocks_bullets(map: &GameMap, x: i32, y: i32, f: i32) -> bool {
-    map.blocks_sight(x, y, f)
-}
-
-// MAP-HOOK: shooter-to-target line of sight.
-fn has_los(map: &GameMap, a: Pos, b: Pos) -> bool {
-    map.line_of_sight(a, b)
-}
-
-// MAP-HOOK: distance from `origin` along unit vector `dir` to the first
-// bullet-blocking tile, capped at `max_range` (exact grid DDA).
-fn wall_distance(map: &GameMap, origin: Pos, dir: (f32, f32), max_range: f32) -> f32 {
-    let f = origin.floor as i32;
-    let (mut cx, mut cy) = (origin.x.floor() as i32, origin.y.floor() as i32);
-    if blocks_bullets(map, cx, cy, f) {
-        return 0.0;
-    }
-    let axis = |p: f32, c: i32, d: f32| -> (i32, f32, f32) {
-        if d > 0.0 {
-            (1, (c as f32 + 1.0 - p) / d, 1.0 / d)
-        } else if d < 0.0 {
-            (-1, (p - c as f32) / -d, -1.0 / d)
-        } else {
-            (0, f32::INFINITY, f32::INFINITY)
-        }
-    };
-    let (sx, mut tmx, tdx) = axis(origin.x, cx, dir.0);
-    let (sy, mut tmy, tdy) = axis(origin.y, cy, dir.1);
-    loop {
-        let t = if tmx < tmy {
-            cx += sx;
-            let t = tmx;
-            tmx += tdx;
-            t
-        } else {
-            cy += sy;
-            let t = tmy;
-            tmy += tdy;
-            t
-        };
-        if !t.is_finite() || t >= max_range {
-            return max_range;
-        }
-        if blocks_bullets(map, cx, cy, f) {
-            return t;
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::f32::consts::PI;
@@ -235,7 +184,7 @@ mod tests {
     use rand_chacha::ChaCha8Rng;
 
     use super::*;
-    use crate::map::Tile;
+    use crate::map::{GameMap, Tile};
     use crate::types::TeamId;
     use crate::world::Unit;
 
@@ -431,18 +380,10 @@ mod tests {
     }
 
     #[test]
-    fn wall_distance_diagonal_and_axis() {
-        let map = GameMap::arena(10, 10);
-        let p = Pos {
-            x: 5.5,
-            y: 5.5,
-            floor: 0,
-        };
-        assert!((wall_distance(&map, p, (1.0, 0.0), 50.0) - 3.5).abs() < 1e-4);
-        assert!((wall_distance(&map, p, (0.0, -1.0), 50.0) - 4.5).abs() < 1e-4);
-        let d = std::f32::consts::FRAC_1_SQRT_2;
-        let t = wall_distance(&map, p, (d, d), 50.0);
-        assert!((t - 3.5 * std::f32::consts::SQRT_2).abs() < 1e-3, "t={t}");
-        assert_eq!(wall_distance(&map, p, (1.0, 0.0), 2.0), 2.0);
+    fn miss_tracer_ends_at_border_wall() {
+        let mut w = world(GameMap::arena(10, 10), &[(0, 5.5, 5.5, 0.0)]);
+        let ev = fire(&mut w, &[true], &exact());
+        assert_eq!(ev.missed_shots[0], 1);
+        assert!((w.shots[0].x - 9.0).abs() < 1e-4, "x={}", w.shots[0].x);
     }
 }
