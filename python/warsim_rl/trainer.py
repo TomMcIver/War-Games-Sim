@@ -24,7 +24,7 @@ from .logger import CsvLogger
 from .models import ActorCritic
 from .policies import NetPolicy, RandomPolicy
 from .ppo import MAPPO
-from .rollout import Collector
+from .rollout import Collector, terminal_values
 
 RECENT_EPISODES = 200
 NAN = float("nan")
@@ -81,7 +81,13 @@ class Trainer:
             max_ticks=stage.max_ticks,
         )
         self.collector = Collector(
-            self.env, self.model, self.mappo, self.league, self.cfg.ppo.rollout_steps, self.device
+            self.env,
+            self.model,
+            self.mappo,
+            self.league,
+            self.cfg.ppo.rollout_steps,
+            self.device,
+            terminal_values(self.cfg.env.extra),
         )
 
     def evaluate_vs_random(self, episodes: Optional[int] = None) -> dict:

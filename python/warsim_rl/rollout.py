@@ -45,19 +45,35 @@ def episode_score(winner: int, team: int) -> float:
     return 1.0 if winner == team else 0.0
 
 
-def rescale_shaping(
-    rewards: np.ndarray, dones: np.ndarray, winner: np.ndarray, team_size: int, scale: float
-) -> np.ndarray:
-    """Scale the shaping part of rewards, leaving the terminal +-1 untouched.
+def terminal_values(env_extra: dict) -> tuple:
+    """(win, loss, draw) terminal rewards, honouring warsim reward_* overrides."""
+    return (
+        float(env_extra.get("reward_win", 1.0)),
+        float(env_extra.get("reward_loss", -1.0)),
+        float(env_extra.get("reward_draw", 0.0)),
+    )
 
-    Works for any env obeying INTERFACE.md (terminal reward is exactly +1 win,
-    -1 loss, 0 draw on the done step), so no env support is needed."""
+
+def rescale_shaping(
+    rewards: np.ndarray,
+    dones: np.ndarray,
+    winner: np.ndarray,
+    team_size: int,
+    scale: float,
+    terminal_rewards: tuple = (1.0, -1.0, 0.0),
+) -> np.ndarray:
+    """Scale the shaping part of rewards, leaving the terminal reward untouched.
+
+    Works for any env obeying INTERFACE.md (terminal reward is +1 win, -1 loss,
+    0 draw on the done step, or the given overrides), so it needs no env
+    support and can be annealed without rebuilding the env."""
     if scale == 1.0:
         return rewards
+    win, loss, draw = terminal_rewards
     E, U = rewards.shape
     unit_team = np.arange(U) // team_size
     w = winner[:, None]
-    terminal = np.where(w < 0, 0.0, np.where(w == unit_team[None], 1.0, -1.0))
+    terminal = np.where(w < 0, draw, np.where(w == unit_team[None], win, loss))
     terminal = terminal * dones[:, None]
     return (terminal + scale * (rewards - terminal)).astype(np.float32)
 
@@ -80,8 +96,10 @@ class Collector:
         league: League,
         steps: int,
         device: str = "cpu",
+        terminal_rewards: tuple = (1.0, -1.0, 0.0),
     ) -> None:
         self.env, self.model, self.mappo, self.league = env, model, mappo, league
+        self.terminal_rewards = terminal_rewards
         self.device = torch.device(device)
         self.E, self.U = env.n_envs, env.n_units
         self.n = self.U // 2
@@ -177,7 +195,9 @@ class Collector:
             self._opponent_forward(actions)
             l_units = team_units(self.learner_team, n)
             obs, rewards, dones, infos = self.env.step(actions)
-            rewards = rescale_shaping(rewards, dones, infos["winner"], n, shaping_scale)
+            rewards = rescale_shaping(
+                rewards, dones, infos["winner"], n, shaping_scale, self.terminal_rewards
+            )
             r_l = rewards[np.arange(E)[:, None], l_units]
             self.buffer.add(
                 t,
