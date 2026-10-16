@@ -1,0 +1,17 @@
+{
+  "name": "mock_curriculum",
+  "seed": 0,
+  "total_updates": 400,
+  "eval_every": 10,
+  "eval_episodes": 64,
+  "env": {"kind": "mock", "n_envs": 32, "team_size": 1, "map_kind": "open", "max_ticks": 120,
+          "shaping_scale": 1.0, "shaping_scale_final": 0.25},
+  "curriculum": {
+    "metric": "eval_random",
+    "stages": [
+      {"team_size": 1, "map_kind": "open", "promote_winrate": 0.8, "min_updates": 20},
+      {"team_size": 2, "map_kind": "arena", "promote_winrate": 0.8, "min_updates": 30},
+      {"team_size": 3, "map_kind": "cover", "max_ticks": 160, "promote_winrate": 0.8, "min_updates": 40}
+    ]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "mock_tiny",
+  "seed": 0,
+  "total_updates": 3,
+  "torch_threads": 1,
+  "eval_every": 2,
+  "eval_episodes": 4,
+  "checkpoint_every": 2,
+  "env": {"kind": "mock", "n_envs": 4, "team_size": 2, "map_kind": "arena", "max_ticks": 20, "eval_envs": 4},
+  "model": {"d_model": 16, "n_heads": 2, "n_layers": 1, "cnn_channels": [4, 8], "cnn_out": 16,
+            "hidden": 32, "critic_d": 16, "critic_hidden": 32},
+  "ppo": {"rollout_steps": 8, "bptt_chunk": 4, "epochs": 2, "minibatches": 2},
+  "league": {"snapshot_every": 1, "pool_size": 3}
+}

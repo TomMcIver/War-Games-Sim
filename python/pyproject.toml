@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "warsim-rl"
+version = "0.1.0"
+description = "MAPPO + self-play league trainer for the War-Games-Sim tactical simulator"
+requires-python = ">=3.9"
+dependencies = ["numpy", "torch"]
+
+[project.optional-dependencies]
+test = ["pytest"]
+yaml = ["pyyaml"]
+
+[project.scripts]
+warsim-train = "warsim_rl.train:main"
+warsim-evaluate = "warsim_rl.evaluate:main"
+
+[tool.setuptools.packages.find]
+include = ["warsim_rl*"]
+
+[tool.setuptools.package-data]
+warsim_rl = ["configs/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests_rl"]
