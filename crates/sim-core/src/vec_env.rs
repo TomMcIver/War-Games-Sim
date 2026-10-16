@@ -399,7 +399,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs Env::new/reset/step from feat/engine"]
     fn shapes_and_reset_obs() {
         for team_size in [1, 2, 4] {
             let mut v = VecEnv::new(3, cfg(team_size, 50), 1);
@@ -421,7 +420,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs Env::new/reset/step from feat/engine"]
     #[should_panic(expected = "actions must have")]
     fn wrong_action_length_panics() {
         let mut v = VecEnv::new(2, cfg(2, 50), 1);
@@ -430,7 +428,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs Env::new/reset/step from feat/engine"]
     #[should_panic(expected = "reset must be called")]
     fn step_before_reset_panics() {
         let mut v = VecEnv::new(1, cfg(1, 50), 1);
@@ -438,7 +435,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs Env::new/reset/step from feat/engine"]
     fn invalid_action_values_act_as_noop() {
         let mut a = VecEnv::new(2, cfg(2, 50), 9);
         let mut b = VecEnv::new(2, cfg(2, 50), 9);
@@ -465,7 +461,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs Env::new/reset/step from feat/engine"]
     fn deterministic_across_thread_counts() {
         let one = run(1, 100);
         assert_eq!(one, run(4, 100));
@@ -490,7 +485,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "needs Env::new/reset/step from feat/engine"]
     fn auto_reset_reports_finished_episode_and_new_obs() {
         let max_ticks = 15;
         let mut v = VecEnv::new(4, cfg(2, max_ticks), 5);
