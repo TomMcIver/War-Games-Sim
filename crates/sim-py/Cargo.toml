@@ -1,0 +1,19 @@
+[package]
+name = "sim-py"
+version.workspace = true
+edition.workspace = true
+publish = false
+description = "Python bindings (module `warsim`) for the War-Games-Sim VecEnv"
+
+[lib]
+name = "warsim"
+crate-type = ["cdylib"]
+# A cdylib extension module cannot be linked into a test executable without
+# libpython; all tests for this crate live in python/tests_bindings (pytest).
+test = false
+doctest = false
+
+[dependencies]
+sim-core = { path = "../sim-core" }
+pyo3 = { version = "=0.30.1", features = ["abi3-py311"] }
+numpy = "=0.30.0"
