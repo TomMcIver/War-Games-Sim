@@ -8,7 +8,7 @@ use std::time::Instant;
 
 use sim_core::obs::{self, ObsMemory, LOCAL_MAP_LEN};
 use sim_core::vec_env::splitmix64;
-use sim_core::{EnvConfig, VecEnv, ACTION_DIMS, ACTION_HEADS};
+use sim_core::{Action, EnvConfig, VecEnv, ACTION_DIMS, ACTION_HEADS};
 
 struct Args {
     n_envs: usize,
@@ -105,14 +105,28 @@ fn bench_obs_only(u: usize, team_size: usize, map_kind: &str) {
         ..EnvConfig::default()
     };
     let mut env = sim_core::Env::new(cfg, 7);
-    env.reset(7);
+    // Play a few random ticks so the snapshot is mid-episode, not spawn.
+    let mut rng = 1u64;
+    let mut raw = vec![0u8; u * ACTION_HEADS];
+    for _ in 0..40 {
+        fill_random(&mut raw, &mut rng);
+        let acts: Vec<Action> = raw.chunks(ACTION_HEADS).map(Action::from_slice).collect();
+        if env.step(&acts).done {
+            env.reset(8);
+        }
+    }
+    let iters = 20_000;
+    let start = Instant::now();
+    for _ in 0..iters {
+        std::hint::black_box(obs::TeamVision::compute(std::hint::black_box(&env.world)));
+    }
+    let vision = start.elapsed().as_secs_f64() / iters as f64;
     let mut mem = ObsMemory::new();
     let mut tok = vec![0.0; u * obs::tokens_len(u)];
     let mut mask = vec![0.0; u * u];
     let mut lmap = vec![0.0; u * LOCAL_MAP_LEN];
     let mut state = vec![0.0; obs::state_len(u)];
     let mut alive = vec![0.0; u];
-    let iters = 20_000;
     let start = Instant::now();
     for _ in 0..iters {
         obs::write_env_obs(
@@ -128,8 +142,9 @@ fn bench_obs_only(u: usize, team_size: usize, map_kind: &str) {
     }
     let per = start.elapsed().as_secs_f64() / iters as f64;
     println!(
-        "  obs encode alone (1 thread): {:.2} us/env, {:.0} envs/s",
+        "  obs encode alone (1 thread): {:.2} us/env ({:.2} us team vision), {:.0} envs/s",
         per * 1e6,
+        vision * 1e6,
         1.0 / per
     );
 }

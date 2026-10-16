@@ -8,8 +8,9 @@
 //! # Frames
 //! The agent frame has its origin at the agent's position. Axis "forward"
 //! is the facing direction `(cos yaw, sin yaw)`; axis "lateral" is facing
-//! rotated by +90 degrees, `(-sin yaw, cos yaw)` (the direction of increasing
-//! yaw). With `yaw == 0` the agent frame equals the world frame.
+//! rotated by +90 degrees, `(-sin yaw, cos yaw)`, i.e. the agent's "left"
+//! (the engine's turn-left / strafe-left direction, see world.rs). With
+//! `yaw == 0` the agent frame equals the world frame.
 //!
 //! # Entity tokens (`[T, TOKEN_FEATS]`, `T = U = world.units.len()`)
 //! Slot order: token 0 = self, then alive allies (unit-index order), then
@@ -30,7 +31,7 @@
 
 use crate::map::{GameMap, Tile};
 use crate::types::*;
-use crate::world::{Unit, World};
+use crate::world::{Unit, World, DEFAULT_AMMO, DEFAULT_MAX_HP};
 
 // ---- buffer sizes ---------------------------------------------------------
 
@@ -60,11 +61,12 @@ pub const POS_NORM: f32 = 32.0;
 /// Relative floor difference is divided by this and clamped to [-1, 1].
 pub const FLOOR_NORM: f32 = 2.0;
 /// Hit points are divided by this (fraction of full health).
-pub const HP_NORM: f32 = 100.0;
-/// Ammo is divided by this and clamped to [0, 1].
-pub const AMMO_NORM: f32 = 30.0;
-/// Weapon cooldown ticks are divided by this and clamped to [0, 1].
-pub const COOLDOWN_NORM: f32 = 10.0;
+pub const HP_NORM: f32 = DEFAULT_MAX_HP;
+/// Ammo is divided by this and clamped to [0, 1] (full magazine = 1).
+pub const AMMO_NORM: f32 = DEFAULT_AMMO as f32;
+/// Weapon cooldown ticks are divided by this and clamped to [0, 1]
+/// (matches the default `WeaponStats::cooldown_ticks`).
+pub const COOLDOWN_NORM: f32 = 3.0;
 /// Enemies stay in team memory this many ticks after last being seen;
 /// last-seen-age is `age_ticks / MEMORY_TICKS` (saturating at 1).
 pub const MEMORY_TICKS: u64 = 50;
@@ -603,26 +605,21 @@ mod tests {
 
     const EPS: f32 = 1e-5;
 
+    const TEST_AMMO: u32 = 15;
+    const TEST_COOLDOWN: u32 = 2;
+
     fn unit(id: UnitId, team: TeamId, x: f32, y: f32, yaw: f32) -> Unit {
-        Unit {
-            id,
-            team,
-            pos: Pos { x, y, floor: 0 },
-            yaw,
-            hp: HP_NORM,
-            ammo: 15,
-            alive: true,
-            cooldown: 5,
-        }
+        let mut u = Unit::new(id, team, Pos { x, y, floor: 0 });
+        u.yaw = yaw;
+        u.ammo = TEST_AMMO;
+        u.cooldown = TEST_COOLDOWN;
+        u
     }
 
     fn world(units: Vec<Unit>) -> World {
-        World {
-            map: GameMap::arena(20, 20),
-            units,
-            tick: 0,
-            shots: Vec::new(),
-        }
+        let mut w = World::new(GameMap::arena(20, 20));
+        w.units = units;
+        w
     }
 
     /// Wall column at x = `x` for y in 1..19 on floor 0.
@@ -687,8 +684,8 @@ mod tests {
             (0.0, 0.0, 0.0, 1.0)
         );
         assert!((s[F_HP] - 1.0).abs() < EPS);
-        assert!((s[F_AMMO] - 15.0 / AMMO_NORM).abs() < EPS);
-        assert!((s[F_COOLDOWN] - 5.0 / COOLDOWN_NORM).abs() < EPS);
+        assert!((s[F_AMMO] - TEST_AMMO as f32 / AMMO_NORM).abs() < EPS);
+        assert!((s[F_COOLDOWN] - TEST_COOLDOWN as f32 / COOLDOWN_NORM).abs() < EPS);
         assert_eq!(s[F_LAST_SEEN], 0.0);
         // Ally (unit 0) is 3 tiles at -y; yaw 0 -> lateral axis is +y.
         let a = o.tok(1);
@@ -912,8 +909,8 @@ mod tests {
         assert_eq!(u2[S_FLOOR], 0.0);
         assert!((u2[S_COS_YAW] + 1.0).abs() < EPS);
         assert!((u2[S_HP] - 1.0).abs() < EPS);
-        assert!((u2[S_AMMO] - 0.5).abs() < EPS);
-        assert!((u2[S_COOLDOWN] - 0.5).abs() < EPS);
+        assert!((u2[S_AMMO] - TEST_AMMO as f32 / AMMO_NORM).abs() < EPS);
+        assert!((u2[S_COOLDOWN] - TEST_COOLDOWN as f32 / COOLDOWN_NORM).abs() < EPS);
         assert_eq!((u2[S_ALIVE], u2[S_TEAM]), (1.0, 1.0));
         assert_eq!(s[S_TEAM], 0.0);
         assert_eq!(s[3 * STATE_FEATS + S_ALIVE], 0.0);
