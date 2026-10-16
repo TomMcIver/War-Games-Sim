@@ -117,7 +117,7 @@ button, select, input { font: inherit; color: inherit; }
 }
 .floor-picker:empty { display: none; }
 .floor-btn {
-  min-width: 44px; height: 30px; padding: 0 8px;
+  min-width: 64px; height: 30px; padding: 0 8px;
   border: 1px solid transparent; border-radius: var(--radius-sm);
   background: transparent; color: var(--muted); cursor: pointer;
   font: 600 12px/1 var(--mono); display: flex; align-items: center; justify-content: space-between; gap: 6px;

@@ -11,7 +11,7 @@
   const TEAM_NAMES = ["Blue", "Red", "Violet", "Green"];
   const COLORS = {
     floorA: "#232b33", floorB: "#262f37", wall: "#8c97a3", wallTop: "#a3adb8", wallShade: "#5d6874",
-    door: "#9a6431", doorEdge: "#5e3b1c", glass: "#7fd6ff", stairs: "#36424e", stairsLine: "#4d5b69",
+    door: "#9a6431", doorEdge: "#5e3b1c", doorOpen: "#d0965a", glass: "#7fd6ff", stairs: "#36424e", stairsLine: "#4d5b69",
     arrow: "#f2b544", dead: "#4a535c", outline: "#0b0f14", hit: "#ff5468", miss: "#c9d2db",
     select: "#f2b544", hover: "#ffffff", border: "#334252",
   };
@@ -42,6 +42,7 @@
     lastFrameIdx: -1,
     pointer: null,        // { downX, downY, dragging, camX, camY } while a button is down
     hoverPt: null,        // last pointer position over the canvas (screen px)
+    onLoad: null,         // one-shot hook applying URL deep-link params
   };
 
   // ---- DOM helpers ------------------------------------------------------
@@ -130,6 +131,7 @@
     updateFollowChip();
     resize();
     S.dirty = true;
+    if (S.onLoad) S.onLoad();
   }
 
   // ---- static panels ------------------------------------------------------
@@ -336,11 +338,23 @@
       case T.DOOR_OPEN: {
         drawFloorTile(g, x, y, p);
         const horiz = runsHorizontally(map, x, y, f);
-        g.fillStyle = COLORS.door;
-        const t2 = Math.max(2, p * 0.14);
-        // leaf swung open: a thin slab along one jamb, perpendicular to the wall
-        if (horiz) g.fillRect(x * p, y * p, t2, p);
-        else g.fillRect(x * p, y * p, p, t2);
+        const X = x * p, Y = y * p, t2 = Math.max(2, p * 0.14);
+        // Hinge on the first jamb; the leaf swings toward tiles drawn earlier
+        // (up / left) so later tiles don't paint over it. Dotted swing arc.
+        const L = p * 0.9;
+        g.strokeStyle = COLORS.doorOpen;
+        g.globalAlpha = 0.55;
+        g.lineWidth = Math.max(1, p / 20);
+        g.setLineDash([Math.max(1, p / 10), Math.max(1, p / 10)]);
+        g.beginPath();
+        if (horiz) g.arc(X, Y + p / 2, L, -Math.PI / 2, 0);
+        else g.arc(X + p / 2, Y, L, Math.PI / 2, Math.PI);
+        g.stroke();
+        g.setLineDash([]);
+        g.globalAlpha = 1;
+        g.fillStyle = COLORS.doorOpen;
+        if (horiz) g.fillRect(X, Y + p / 2 - L, t2, L);
+        else g.fillRect(X + p / 2 - L, Y, L, t2);
         return;
       }
       case T.WINDOW: {
@@ -808,7 +822,17 @@
   wirePointer();
   wireDrop();
   resize();
-  const param = new URLSearchParams(window.location.search).get("replay");
-  if (param) loadUrl(param); else loadSample();
+  // Deep links: ?replay=<url>&t=<tick>&floor=<f>&follow=<unit id>&play=1
+  const params = new URLSearchParams(window.location.search);
+  S.onLoad = () => {
+    S.onLoad = null;
+    const num = (k) => (params.has(k) && Number.isFinite(Number(params.get(k))) ? Number(params.get(k)) : null);
+    if (num("t") !== null) seek(R.frameIndexForTick(S.model, num("t")));
+    if (num("floor") !== null) setFloor(num("floor"));
+    if (num("follow") !== null) toggleFollow(num("follow"));
+    if (params.get("play") === "1") setPlaying(true);
+  };
+  const replayParam = params.get("replay");
+  if (replayParam) loadUrl(replayParam); else loadSample();
   requestAnimationFrame(tick);
 })();

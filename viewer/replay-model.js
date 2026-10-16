@@ -133,7 +133,9 @@
       frames,
       units: unitList,
       teams,
-      hpScale: maxHp > 1 ? maxHp : 1,
+      // Full-health reference for HP bars: config.max_hp if given, else the
+      // largest hp seen (engine uses 100), else 1 (normalised hp).
+      hpScale: isNum(config.max_hp) && config.max_hp > 0 ? config.max_hp : maxHp > 1 ? maxHp : 1,
       tickSeconds,
       tickStride,
       framesPerSecond: 1 / (tickSeconds * tickStride),
