@@ -92,6 +92,21 @@ impl TickEvents {
             was_alive,
         }
     }
+
+    /// Clear for a new tick, reusing the allocations.
+    pub fn reset(&mut self, was_alive: impl Iterator<Item = bool>) {
+        self.was_alive.clear();
+        self.was_alive.extend(was_alive);
+        let n = self.was_alive.len();
+        for v in [&mut self.damage_dealt, &mut self.damage_taken] {
+            v.clear();
+            v.resize(n, 0.0);
+        }
+        for v in [&mut self.kills, &mut self.missed_shots] {
+            v.clear();
+            v.resize(n, 0);
+        }
+    }
 }
 
 /// One reward per unit. `teams[i]` is unit i's team.
