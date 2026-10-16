@@ -4,10 +4,12 @@
 //! The AI gets NO scripted tactics. It sees observations, emits low-level
 //! actions, and learns from reward. See docs/INTERFACE.md for the contract.
 
+pub mod combat;
 pub mod env;
 pub mod map;
 pub mod obs;
 pub mod replay;
+pub mod reward;
 pub mod types;
 pub mod vec_env;
 pub mod world;
