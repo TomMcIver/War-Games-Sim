@@ -6,13 +6,20 @@
 //! written as `0`.
 //!
 //! ```no_run
-//! # use sim_core::replay::ReplayWriter;
-//! # let world: sim_core::world::World = unimplemented!();
-//! let config = serde_json::json!({"team_size": 2, "map_kind": "arena"});
-//! let mut writer = ReplayWriter::new(config, 42, sim_core::replay::map_json(&world.map));
-//! writer.record(&world); // once per tick, after the world has stepped
+//! use sim_core::{replay::ReplayWriter, Action, Env, EnvConfig};
+//! let seed = 42;
+//! let mut env = Env::new(EnvConfig::default(), seed);
+//! let mut writer = ReplayWriter::for_env(&env, seed);
+//! writer.record(&env.world); // initial state
+//! while !env.step(&vec![Action::default(); env.n_units()]).done {
+//!     writer.record(&env.world); // once per tick, after stepping
+//! }
+//! writer.record(&env.world);
 //! writer.finish().write_to_file("runs/replays/ep0.json").unwrap();
 //! ```
+//!
+//! Known limitation (format v1): the map is stored once, so doors toggled
+//! during the episode are drawn in their initial state.
 
 use std::fmt;
 use std::fs::File;
@@ -22,6 +29,7 @@ use std::path::Path;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::{json, Value};
 
+use crate::env::{Env, EnvConfig};
 use crate::map::GameMap;
 use crate::world::{ShotEvent, Unit, World};
 
@@ -223,18 +231,36 @@ impl ReplayWriter {
     }
 }
 
-/// Map JSON (docs/INTERFACE.md) built only from `GameMap`'s public accessors:
-/// `{"width","height","floors","tiles"}` with `tiles[(f*H + y)*W + x]` = Tile u8.
+/// Map JSON (docs/INTERFACE.md) as a `Value`, same content as
+/// `GameMap::to_json`: `{"width","height","floors","tiles"}` with
+/// `tiles[(f*H + y)*W + x]` = Tile u8.
 pub fn map_json(map: &GameMap) -> Value {
-    let mut tiles = Vec::with_capacity(map.width * map.height * map.floors);
-    for f in 0..map.floors {
-        for y in 0..map.height {
-            for x in 0..map.width {
-                tiles.push(map.tile(x as i32, y as i32, f as i32) as u8);
-            }
-        }
+    json!({
+        "width": map.width,
+        "height": map.height,
+        "floors": map.floors,
+        "tiles": map.tile_bytes(),
+    })
+}
+
+/// The parts of `EnvConfig` the viewer and analysis tools care about.
+/// (`EnvConfig` itself is not `Serialize`.)
+pub fn config_json(cfg: &EnvConfig) -> Value {
+    json!({
+        "team_size": cfg.team_size,
+        "max_ticks": cfg.max_ticks,
+        "tick_seconds": cfg.tick_seconds,
+        "map_kind": cfg.map_kind,
+        "max_hp": cfg.unit.max_hp,
+    })
+}
+
+impl ReplayWriter {
+    /// Writer for an episode of `env`, taking config and map from it. Call
+    /// right after `Env::new`/`reset` and `record` the initial world first.
+    pub fn for_env(env: &Env, seed: u64) -> Self {
+        Self::new(config_json(&env.cfg), seed, map_json(&env.world.map))
     }
-    json!({"width": map.width, "height": map.height, "floors": map.floors, "tiles": tiles})
 }
 
 #[derive(Debug)]
@@ -288,10 +314,8 @@ impl From<serde_json::Error> for ReplayError {
 mod tests {
     use super::*;
     use crate::map::Tile;
+    use crate::types::{Action, Pos};
 
-    // The world is built without units on purpose: `Unit` gains fields on the
-    // engine branch, so a struct literal here would break on merge. The
-    // Unit -> UnitFrame mapping is a plain field copy (see `From<&Unit>`).
     fn world() -> World {
         World {
             map: GameMap::filled(6, 4, 1, Tile::Floor),
@@ -353,6 +377,75 @@ mod tests {
                 floor: 0,
                 hit: Some(1)
             }]
+        );
+    }
+
+    #[test]
+    fn unit_frame_copies_unit_state() {
+        let mut w = world();
+        let mut u = Unit::new(
+            3,
+            1,
+            Pos {
+                x: 2.5,
+                y: 1.25,
+                floor: 1,
+            },
+        );
+        u.yaw = -1.0;
+        u.hp = 40.0;
+        w.units.push(u);
+        let f = Frame::from_world(&w);
+        assert_eq!(
+            f.units,
+            vec![UnitFrame {
+                id: 3,
+                team: 1,
+                x: 2.5,
+                y: 1.25,
+                floor: 1,
+                yaw: -1.0,
+                hp: 40.0,
+                alive: true
+            }]
+        );
+    }
+
+    fn record_episode(seed: u64, max_ticks: u32) -> Replay {
+        let cfg = EnvConfig {
+            max_ticks,
+            ..EnvConfig::default()
+        };
+        let mut env = Env::new(cfg, seed);
+        let mut writer = ReplayWriter::for_env(&env, seed);
+        writer.record(&env.world);
+        // Everyone turns and fires every tick: exercises shots and kills
+        // without any tactics (this is a fixture, not a policy).
+        let n = env.n_units();
+        let act = Action::from_slice(&[1, 0, 1, 1, 0]);
+        loop {
+            let done = env.step(&vec![act; n]).done;
+            writer.record(&env.world);
+            if done {
+                break;
+            }
+        }
+        writer.finish()
+    }
+
+    #[test]
+    fn records_a_real_episode_deterministically() {
+        let r = record_episode(5, 120);
+        assert_eq!(r.config["team_size"], 2);
+        check_map(&r.map);
+        assert!(r.frames.len() > 1 && r.frames.len() <= 121);
+        assert!(r.frames.windows(2).all(|p| p[1].tick == p[0].tick + 1));
+        let back = Replay::from_json(&r.to_json().unwrap()).unwrap();
+        assert_eq!(back.frames.len(), r.frames.len());
+        assert_eq!(
+            record_episode(5, 120).to_json().unwrap(),
+            r.to_json().unwrap(),
+            "same seed + actions must give the same replay"
         );
     }
 
