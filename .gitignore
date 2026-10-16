@@ -1,0 +1,30 @@
+# Rust / build output
+target/
+build/
+*.pdb
+*.exe
+*.obj
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+*.so
+*.pyd
+runs/
+checkpoints/
+
+# AI tooling - never commit
+.claude/
+.agent/
+.agents/
+.claude-mem/
+CLAUDE.md
+AGENTS.md
+.worktrees/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
