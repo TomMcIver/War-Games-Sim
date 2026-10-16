@@ -49,13 +49,28 @@ pub struct Action {
 
 impl Action {
     pub fn from_slice(a: &[u8]) -> Self {
-        Self { forward: a[0], strafe: a[1], turn: a[2], shoot: a[3], interact: a[4] }
+        Self {
+            forward: a[0],
+            strafe: a[1],
+            turn: a[2],
+            shoot: a[3],
+            interact: a[4],
+        }
     }
     pub fn to_array(self) -> [u8; ACTION_HEADS] {
-        [self.forward, self.strafe, self.turn, self.shoot, self.interact]
+        [
+            self.forward,
+            self.strafe,
+            self.turn,
+            self.shoot,
+            self.interact,
+        ]
     }
     /// True if every head is within ACTION_DIMS.
     pub fn is_valid(self) -> bool {
-        self.to_array().iter().zip(ACTION_DIMS).all(|(&v, d)| (v as usize) < d)
+        self.to_array()
+            .iter()
+            .zip(ACTION_DIMS)
+            .all(|(&v, d)| (v as usize) < d)
     }
 }
