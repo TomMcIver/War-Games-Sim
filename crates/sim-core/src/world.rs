@@ -18,7 +18,7 @@ use crate::types::{Action, Pos, TeamId, UnitId};
 /// Default unit hit points (also used by `Unit::new`).
 pub const DEFAULT_MAX_HP: f32 = 100.0;
 /// Default rounds per unit per episode (no reloads).
-pub const DEFAULT_AMMO: u32 = 60;
+pub const DEFAULT_AMMO: u32 = 30;
 
 /// Small epsilon used to keep units strictly off wall edges.
 const EPS: f32 = 1e-4;
@@ -38,8 +38,9 @@ pub struct UnitStats {
     pub strafe_speed: f32,
     /// Radians per second.
     pub turn_rate: f32,
-    /// Ticks a unit must wait between two successful `interact`s
-    /// (prevents door/stairs flicker when interact is held).
+    /// Ticks a unit must wait after a successful `interact` before the next
+    /// one (prevents door/stairs flicker when interact is held). Tracked by
+    /// `Env`, not `Unit`, so `Unit` stays a plain literal-constructible struct.
     pub interact_cooldown_ticks: u32,
 }
 
@@ -69,8 +70,6 @@ pub struct Unit {
     pub alive: bool,
     /// Ticks until the weapon can fire again.
     pub cooldown: u32,
-    /// Ticks until `interact` can be used again.
-    pub interact_cooldown: u32,
 }
 
 impl Unit {
@@ -85,7 +84,6 @@ impl Unit {
             ammo: DEFAULT_AMMO,
             alive: true,
             cooldown: 0,
-            interact_cooldown: 0,
         }
     }
 
@@ -250,21 +248,13 @@ impl World {
     }
 
     /// `interact=1` for unit `i`: use stairs when standing on them, else
-    /// toggle the door in the tile directly in front.
+    /// toggle the door in the tile directly in front. (The interact
+    /// cooldown is enforced by `Env`.)
     pub(crate) fn interact(&mut self, i: usize, stats: &UnitStats) -> InteractOutcome {
-        if self.units[i].interact_cooldown > 0 {
-            return InteractOutcome::None;
+        match self.use_stairs(i, stats.radius) {
+            InteractOutcome::None => self.toggle_door_ahead(i, stats.radius),
+            changed => changed,
         }
-        let outcome = self.use_stairs(i, stats.radius);
-        let outcome = if outcome == InteractOutcome::None {
-            self.toggle_door_ahead(i, stats.radius)
-        } else {
-            outcome
-        };
-        if outcome != InteractOutcome::None {
-            self.units[i].interact_cooldown = stats.interact_cooldown_ticks;
-        }
-        outcome
     }
 
     fn use_stairs(&mut self, i: usize, radius: f32) -> InteractOutcome {
@@ -427,7 +417,30 @@ mod tests {
             (u.id, u.team, u.hp, u.ammo, u.alive),
             (3, 1, DEFAULT_MAX_HP, DEFAULT_AMMO, true)
         );
-        assert_eq!((u.cooldown, u.interact_cooldown), (0, 0));
+        assert_eq!(u.cooldown, 0);
+    }
+
+    /// Other crates/tests build `Unit` and `World` with struct literals; adding
+    /// a field breaks them. This fails to compile if the field set changes.
+    #[test]
+    fn unit_and_world_literal_shape_is_stable() {
+        let u = Unit {
+            id: 0,
+            team: 0,
+            pos: pos(1.5, 1.5),
+            yaw: 0.0,
+            hp: 1.0,
+            ammo: 1,
+            alive: true,
+            cooldown: 0,
+        };
+        let w = World {
+            map: GameMap::arena(4, 4),
+            units: vec![u],
+            tick: 0,
+            shots: Vec::new(),
+        };
+        assert_eq!(w.units.len(), 1);
     }
 
     #[test]
@@ -551,14 +564,10 @@ mod tests {
     }
 
     #[test]
-    fn interact_cooldown_and_door_close() {
+    fn interact_toggles_door_back_closed() {
         let s = UnitStats::default();
         let mut w = door_world();
         assert_eq!(w.interact(0, &s), InteractOutcome::DoorOpened);
-        assert_eq!(w.units[0].interact_cooldown, s.interact_cooldown_ticks);
-        // On cooldown: nothing happens.
-        assert_eq!(w.interact(0, &s), InteractOutcome::None);
-        w.units[0].interact_cooldown = 0;
         assert_eq!(w.interact(0, &s), InteractOutcome::DoorClosed);
         assert_eq!(w.map.tile(5, 5, 0), Tile::DoorClosed);
     }
@@ -568,7 +577,6 @@ mod tests {
         let s = UnitStats::default();
         let mut w = door_world();
         w.interact(0, &s);
-        w.units[0].interact_cooldown = 0;
         w.units.push(Unit::new(1, 1, pos(5.5, 5.5)));
         assert_eq!(w.interact(0, &s), InteractOutcome::None);
         assert_eq!(w.map.tile(5, 5, 0), Tile::DoorOpen);
@@ -590,7 +598,6 @@ mod tests {
         assert_eq!(w.interact(0, &s), InteractOutcome::ChangedFloor);
         assert_eq!(w.units[0].pos.floor, 1);
         assert!((w.units[0].pos.x - 2.5).abs() < 1e-6);
-        w.units[0].interact_cooldown = 0;
         assert_eq!(w.interact(0, &s), InteractOutcome::ChangedFloor);
         assert_eq!(w.units[0].pos.floor, 0);
     }
