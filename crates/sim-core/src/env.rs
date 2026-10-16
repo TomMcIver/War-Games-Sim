@@ -24,7 +24,7 @@ use crate::combat::{self, WeaponStats};
 use crate::map::GameMap;
 use crate::reward::{compute_rewards, Outcome, RewardConfig, TickEvents};
 use crate::types::{Action, Pos, TeamId, MAX_TEAM_SIZE};
-use crate::world::{Unit, UnitStats, World};
+use crate::world::{InteractOutcome, Unit, UnitStats, World};
 
 /// Arena size used while the map generator is a stub.
 const ARENA_WIDTH: usize = 24;
@@ -73,6 +73,9 @@ pub struct Env {
     rng: ChaCha8Rng,
     done: bool,
     winner: Option<TeamId>,
+    /// Per-unit ticks until `interact` works again (see
+    /// `UnitStats::interact_cooldown_ticks`).
+    interact_cooldown: Vec<u32>,
 }
 
 impl Env {
@@ -83,13 +86,7 @@ impl Env {
     pub fn new(cfg: EnvConfig, seed: u64) -> Self {
         validate(&cfg);
         let world = World::new(build_map(&cfg, seed));
-        let mut env = Self {
-            cfg,
-            world,
-            rng: ChaCha8Rng::seed_from_u64(seed),
-            done: false,
-            winner: None,
-        };
+        let mut env = Self::from_world(cfg, world, seed);
         env.reset(seed);
         env
     }
@@ -98,12 +95,14 @@ impl Env {
     /// a later `reset` rebuilds the configured map and respawns.
     pub fn from_world(cfg: EnvConfig, world: World, seed: u64) -> Self {
         validate(&cfg);
+        let n = world.units.len();
         Self {
             cfg,
             world,
             rng: ChaCha8Rng::seed_from_u64(seed),
             done: false,
             winner: None,
+            interact_cooldown: vec![0; n],
         }
     }
 
@@ -120,6 +119,7 @@ impl Env {
         self.rng = ChaCha8Rng::seed_from_u64(seed);
         self.done = false;
         self.winner = None;
+        self.interact_cooldown = vec![0; self.world.units.len()];
     }
 
     pub fn world(&self) -> &World {
@@ -160,9 +160,13 @@ impl Env {
         let was_alive: Vec<bool> = self.world.units.iter().map(|u| u.alive).collect();
         let mut events = TickEvents::new(was_alive.clone());
 
+        // Units may have been added through `world_mut()`.
+        self.interact_cooldown.resize(n, 0);
         for u in self.world.units.iter_mut().filter(|u| u.alive) {
             u.cooldown = u.cooldown.saturating_sub(1);
-            u.interact_cooldown = u.interact_cooldown.saturating_sub(1);
+        }
+        for cd in &mut self.interact_cooldown {
+            *cd = cd.saturating_sub(1);
         }
 
         let dt = self.cfg.tick_seconds;
@@ -172,7 +176,11 @@ impl Env {
             moved[i] = self.world.move_unit(i, &acts[i], &self.cfg.unit, dt);
         }
         for i in (0..n).filter(|&i| was_alive[i] && acts[i].interact == 1) {
-            self.world.interact(i, &self.cfg.unit);
+            if self.interact_cooldown[i] == 0
+                && self.world.interact(i, &self.cfg.unit) != InteractOutcome::None
+            {
+                self.interact_cooldown[i] = self.cfg.unit.interact_cooldown_ticks;
+            }
         }
 
         let wants_shoot: Vec<bool> = (0..n).map(|i| was_alive[i] && acts[i].shoot == 1).collect();
@@ -239,7 +247,10 @@ impl Env {
             h.u32(u.ammo);
             h.u8(u8::from(u.alive));
             h.u32(u.cooldown);
-            h.u32(u.interact_cooldown);
+        }
+        h.u64(self.interact_cooldown.len() as u64);
+        for &cd in &self.interact_cooldown {
+            h.u32(cd);
         }
         hash_map_tiles(&mut h, &w.map);
         h.u64(w.shots.len() as u64);
