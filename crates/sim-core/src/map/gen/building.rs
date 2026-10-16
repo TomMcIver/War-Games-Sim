@@ -8,8 +8,8 @@ use rand::Rng;
 use rand_chacha::ChaCha8Rng;
 
 use super::rooms::{
-    partition, place_exterior_openings, place_seg_doors, place_seg_windows, place_stairs,
-    shell, Seg,
+    partition, place_exterior_openings, place_seg_doors, place_seg_windows, place_stairs, shell,
+    Seg,
 };
 use super::{bordered, install_edge_spawns, scatter_cover, Rect, SPAWN_DEPTH};
 use crate::map::GameMap;
@@ -17,15 +17,32 @@ use crate::map::GameMap;
 const W: i32 = 41;
 const H: i32 = 29;
 /// Building outer wall rectangle (point-symmetric about the map centre).
-const OUTER: Rect = Rect { x0: 8, y0: 4, x1: W - 1 - 8, y1: H - 1 - 4 };
+const OUTER: Rect = Rect {
+    x0: 8,
+    y0: 4,
+    x1: W - 1 - 8,
+    y1: H - 1 - 4,
+};
 const MIN_ROOM: i32 = 3;
 
 pub(super) fn build(rng: &mut ChaCha8Rng, _team_size: usize) -> Option<GameMap> {
     let mut m = bordered(W, H, 2);
     let cx = (W - 1) / 2;
     // Interior of the canonical (low-x) half, up to the spine wall.
-    let half = Rect { x0: OUTER.x0 + 1, y0: OUTER.y0 + 1, x1: cx - 1, y1: OUTER.y1 - 1 };
-    let spine = Seg { r: Rect { x0: cx, x1: cx, ..OUTER.inner() }, vertical: true };
+    let half = Rect {
+        x0: OUTER.x0 + 1,
+        y0: OUTER.y0 + 1,
+        x1: cx - 1,
+        y1: OUTER.y1 - 1,
+    };
+    let spine = Seg {
+        r: Rect {
+            x0: cx,
+            x1: cx,
+            ..OUTER.inner()
+        },
+        vertical: true,
+    };
 
     for f in 0..2 {
         shell(&mut m, OUTER, f);
@@ -46,7 +63,12 @@ pub(super) fn build(rng: &mut ChaCha8Rng, _team_size: usize) -> Option<GameMap> 
     if !place_stairs(&mut m, rng, half, 0, 1) {
         return None;
     }
-    let yard = Rect { x0: SPAWN_DEPTH + 2, y0: 1, x1: cx - 1, y1: H - 2 };
+    let yard = Rect {
+        x0: SPAWN_DEPTH + 2,
+        y0: 1,
+        x1: cx - 1,
+        y1: H - 2,
+    };
     let cover = rng.gen_range(3..=6);
     scatter_cover(&mut m, rng, yard, cover);
     install_edge_spawns(&mut m);

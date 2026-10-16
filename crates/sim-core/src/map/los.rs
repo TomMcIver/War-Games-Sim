@@ -150,7 +150,12 @@ impl GameMap {
             return miss(0.0);
         }
         if from.floor as usize >= self.floors {
-            return RayHit { distance: 0.0, x: from.x, y: from.y, tile: None };
+            return RayHit {
+                distance: 0.0,
+                x: from.x,
+                y: from.y,
+                tile: None,
+            };
         }
         let range = f64::from(max_range.min(1.0e6));
         let (ax, ay) = (f64::from(from.x), f64::from(from.y));

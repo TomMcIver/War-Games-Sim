@@ -8,8 +8,7 @@ use rand::Rng;
 use rand_chacha::ChaCha8Rng;
 
 use super::rooms::{
-    partition, place_exterior_openings, place_seg_doors, place_seg_windows, place_stairs,
-    shell,
+    partition, place_exterior_openings, place_seg_doors, place_seg_windows, place_stairs, shell,
 };
 use super::{bordered, install_edge_spawns, scatter_cover, Rect, SPAWN_DEPTH};
 use crate::map::GameMap;
@@ -31,14 +30,24 @@ pub(super) fn build(rng: &mut ChaCha8Rng, _team_size: usize) -> Option<GameMap> 
             if !rng.gen_bool(HOUSE_CHANCE) {
                 continue;
             }
-            let lot = Rect { x0: lx0, y0: ly0, x1: lx1, y1: ly1 };
+            let lot = Rect {
+                x0: lx0,
+                y0: ly0,
+                x1: lx1,
+                y1: ly1,
+            };
             if !house(&mut m, rng, lot) {
                 return None;
             }
         }
     }
     let cx = (SIZE - 1) / 2;
-    let region = Rect { x0: SPAWN_DEPTH + 2, y0: 1, x1: cx - 1, y1: SIZE - 2 };
+    let region = Rect {
+        x0: SPAWN_DEPTH + 2,
+        y0: 1,
+        x1: cx - 1,
+        y1: SIZE - 2,
+    };
     let cover = rng.gen_range(18..=26);
     scatter_cover(&mut m, rng, region, cover);
     install_edge_spawns(&mut m);
@@ -51,8 +60,17 @@ fn house(m: &mut GameMap, rng: &mut ChaCha8Rng, lot: Rect) -> bool {
     let h = rng.gen_range(MIN_HOUSE..=lot.h());
     let x0 = rng.gen_range(lot.x0..=lot.x1 - w + 1);
     let y0 = rng.gen_range(lot.y0..=lot.y1 - h + 1);
-    let outer = Rect { x0, y0, x1: x0 + w - 1, y1: y0 + h - 1 };
-    let floors = if w >= 7 && h >= 7 && rng.gen_bool(TWO_FLOOR_CHANCE) { 2 } else { 1 };
+    let outer = Rect {
+        x0,
+        y0,
+        x1: x0 + w - 1,
+        y1: y0 + h - 1,
+    };
+    let floors = if w >= 7 && h >= 7 && rng.gen_bool(TWO_FLOOR_CHANCE) {
+        2
+    } else {
+        1
+    };
     for f in 0..floors {
         shell(m, outer, f);
         let segs = partition(m, rng, outer.inner(), f, MIN_ROOM);

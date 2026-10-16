@@ -20,18 +20,36 @@ fn open_floor_has_sight() {
 
 #[test]
 fn walls_and_closed_doors_block_windows_and_open_doors_do_not() {
-    for (mid, expect) in [('#', false), ('+', false), (' ', false), ('=', true), ('/', true)] {
+    for (mid, expect) in [
+        ('#', false),
+        ('+', false),
+        (' ', false),
+        ('=', true),
+        ('/', true),
+    ] {
         let row = format!("#...{mid}...#");
         let m = ascii(&[&["#########", &row, "#########"]]);
-        assert_eq!(m.line_of_sight(p(1.5, 1.5), p(7.5, 1.5)), expect, "tile {mid:?}");
+        assert_eq!(
+            m.line_of_sight(p(1.5, 1.5), p(7.5, 1.5)),
+            expect,
+            "tile {mid:?}"
+        );
     }
 }
 
 #[test]
 fn cross_floor_sight_is_false() {
     let m = ascii(&[ROOM, ROOM]);
-    let a = Pos { x: 2.5, y: 2.5, floor: 0 };
-    let b = Pos { x: 2.5, y: 2.5, floor: 1 };
+    let a = Pos {
+        x: 2.5,
+        y: 2.5,
+        floor: 0,
+    };
+    let b = Pos {
+        x: 2.5,
+        y: 2.5,
+        floor: 1,
+    };
     assert!(!m.line_of_sight(a, b));
     assert!(m.line_of_sight(b, Pos { x: 5.5, ..b }));
 }
@@ -39,7 +57,18 @@ fn cross_floor_sight_is_false() {
 #[test]
 fn bad_inputs_have_no_sight() {
     let m = ascii(&[ROOM]);
-    assert!(!m.line_of_sight(Pos { x: 2.5, y: 2.5, floor: 3 }, Pos { x: 3.5, y: 2.5, floor: 3 }));
+    assert!(!m.line_of_sight(
+        Pos {
+            x: 2.5,
+            y: 2.5,
+            floor: 3
+        },
+        Pos {
+            x: 3.5,
+            y: 2.5,
+            floor: 3
+        }
+    ));
     assert!(!m.line_of_sight(p(f32::NAN, 2.5), p(3.5, 2.5)));
     assert!(!m.line_of_sight(p(2.5, 2.5), p(f32::INFINITY, 2.5)));
 }
@@ -47,8 +76,14 @@ fn bad_inputs_have_no_sight() {
 #[test]
 fn target_wall_tile_itself_is_visible_but_not_beyond() {
     let m = ascii(&[ROOM]);
-    assert!(m.line_of_sight(p(4.5, 2.5), p(8.5, 2.5)), "wall tile is seen");
-    assert!(!m.line_of_sight(p(4.5, 2.5), p(10.5, 2.5)), "beyond the wall is not");
+    assert!(
+        m.line_of_sight(p(4.5, 2.5), p(8.5, 2.5)),
+        "wall tile is seen"
+    );
+    assert!(
+        !m.line_of_sight(p(4.5, 2.5), p(10.5, 2.5)),
+        "beyond the wall is not"
+    );
 }
 
 #[test]
@@ -104,7 +139,10 @@ fn axis_aligned_and_grid_line_segments() {
 /// segment only barely touches a blocking tile (numerically ambiguous).
 fn reference_los(m: &GameMap, a: Pos, b: Pos) -> Option<bool> {
     let (ax, ay, bx, by) = (a.x as f64, a.y as f64, b.x as f64, b.y as f64);
-    let (ta, tb) = ((ax.floor() as i32, ay.floor() as i32), (bx.floor() as i32, by.floor() as i32));
+    let (ta, tb) = (
+        (ax.floor() as i32, ay.floor() as i32),
+        (bx.floor() as i32, by.floor() as i32),
+    );
     let mut ambiguous = false;
     for ty in ta.1.min(tb.1)..=ta.1.max(tb.1) {
         for tx in ta.0.min(tb.0)..=ta.0.max(tb.0) {
@@ -176,9 +214,21 @@ fn los_is_symmetric() {
             };
             let (ax, ay) = pick(&mut rng);
             let (bx, by) = pick(&mut rng);
-            let a = Pos { x: ax, y: ay, floor };
-            let b = Pos { x: bx, y: by, floor };
-            assert_eq!(m.line_of_sight(a, b), m.line_of_sight(b, a), "{kind}: {a:?} {b:?}");
+            let a = Pos {
+                x: ax,
+                y: ay,
+                floor,
+            };
+            let b = Pos {
+                x: bx,
+                y: by,
+                floor,
+            };
+            assert_eq!(
+                m.line_of_sight(a, b),
+                m.line_of_sight(b, a),
+                "{kind}: {a:?} {b:?}"
+            );
         }
     }
 }
@@ -258,7 +308,10 @@ fn raycast_agrees_with_line_of_sight() {
                 "{a:?} {b:?} {hit:?}"
             );
         } else {
-            assert!(hit.blocked() && hit.distance < dist + 1e-3, "{a:?} {b:?} {hit:?}");
+            assert!(
+                hit.blocked() && hit.distance < dist + 1e-3,
+                "{a:?} {b:?} {hit:?}"
+            );
         }
     }
 }

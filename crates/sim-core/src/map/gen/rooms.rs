@@ -103,12 +103,7 @@ fn seg_openings(m: &GameMap, seg: Seg, f: i32) -> Vec<(i32, i32)> {
 
 /// Put one door (two on long walls, sometimes) in every wall. Returns
 /// `false` if some wall has no valid door position (caller retries).
-pub(super) fn place_seg_doors(
-    m: &mut GameMap,
-    rng: &mut ChaCha8Rng,
-    segs: &[Seg],
-    f: i32,
-) -> bool {
+pub(super) fn place_seg_doors(m: &mut GameMap, rng: &mut ChaCha8Rng, segs: &[Seg], f: i32) -> bool {
     for &seg in segs {
         let spots = seg_openings(m, seg, f);
         let Some(&(x, y)) = spots.choose(rng) else {

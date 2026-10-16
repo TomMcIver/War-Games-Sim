@@ -81,7 +81,10 @@ impl GameMap {
     pub fn validate(&self) -> Result<(), MapError> {
         for team in 0..2u8 {
             let zone = self.spawn_zone(team);
-            let walkable = zone.iter().filter(|&&(x, y, f)| self.is_walkable(x, y, f)).count();
+            let walkable = zone
+                .iter()
+                .filter(|&&(x, y, f)| self.is_walkable(x, y, f))
+                .count();
             if walkable < MAX_TEAM_SIZE {
                 return Err(MapError::Invalid(format!(
                     "team {team} spawn zone has {walkable} walkable tiles, need {MAX_TEAM_SIZE}"

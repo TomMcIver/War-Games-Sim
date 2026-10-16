@@ -14,7 +14,12 @@ pub(super) fn build(rng: &mut ChaCha8Rng, team_size: usize) -> GameMap {
     let mut m = bordered(w, h, 1);
     let cx = (w - 1) / 2;
     // Canonical half, clear of the spawn columns.
-    let region = Rect { x0: SPAWN_DEPTH + 2, y0: 1, x1: cx - 1, y1: h - 2 };
+    let region = Rect {
+        x0: SPAWN_DEPTH + 2,
+        y0: 1,
+        x1: cx - 1,
+        y1: h - 2,
+    };
     let count = 3 + n as u32 + rng.gen_range(0..=3);
     scatter_cover(&mut m, rng, region, count);
     install_edge_spawns(&mut m);

@@ -51,7 +51,14 @@ fn is_connected_follows_doors_and_stairs() {
     // Floor 1 has only the one staircase, so the middle floor-0 room is
     // not reachable from the left room.
     assert!(!m.is_connected(left, p(4.5, 1.5)));
-    assert!(m.is_connected(left, Pos { x: 4.5, y: 2.5, floor: 1 }));
+    assert!(m.is_connected(
+        left,
+        Pos {
+            x: 4.5,
+            y: 2.5,
+            floor: 1
+        }
+    ));
     // Closed door counts as passable: (5,1) -> (7,1) through (6,1).
     assert!(m.is_connected(p(4.5, 1.5), p(7.5, 2.5)));
     // Non-passable endpoints are never connected.

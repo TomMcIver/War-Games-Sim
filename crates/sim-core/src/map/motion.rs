@@ -79,7 +79,11 @@ impl GameMap {
         if !(dx.is_finite() && dy.is_finite()) {
             return from;
         }
-        let full = Pos { x: from.x + dx, y: from.y + dy, ..from };
+        let full = Pos {
+            x: from.x + dx,
+            y: from.y + dy,
+            ..from
+        };
         if self.can_move(from, full, radius) {
             return full;
         }
@@ -94,7 +98,11 @@ impl GameMap {
 
     /// Furthest point along `(dx, dy)` reachable from `from` (bisection).
     fn advance(&self, from: Pos, dx: f32, dy: f32, radius: f32) -> Pos {
-        let at = |s: f32| Pos { x: from.x + dx * s, y: from.y + dy * s, ..from };
+        let at = |s: f32| Pos {
+            x: from.x + dx * s,
+            y: from.y + dy * s,
+            ..from
+        };
         if dx == 0.0 && dy == 0.0 {
             return from;
         }

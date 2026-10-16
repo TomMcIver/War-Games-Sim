@@ -38,8 +38,14 @@ fn circle_overlap_uses_radius() {
     assert!(!m.circle_fits(1.2, 4.5, 0, 0.25));
     // Pillar at (2,2): near its corner (2,2) the distance is Euclidean.
     let pillar = ascii(&[&["#####", "#...#", "#.#.#", "#...#", "#####"]]);
-    assert!(pillar.circle_fits(1.75, 1.75, 0, 0.3), "0.354 from the corner");
-    assert!(!pillar.circle_fits(1.8, 1.8, 0, 0.3), "0.283 from the corner");
+    assert!(
+        pillar.circle_fits(1.75, 1.75, 0, 0.3),
+        "0.354 from the corner"
+    );
+    assert!(
+        !pillar.circle_fits(1.8, 1.8, 0, 0.3),
+        "0.283 from the corner"
+    );
     // Centre in a blocked tile never fits, even with zero radius.
     assert!(!m.circle_fits(0.5, 4.5, 0, 0.0));
     assert!(m.circle_fits(1.01, 4.5, 0, 0.0));
@@ -73,7 +79,10 @@ fn slide_move_slides_along_a_wall() {
     assert!((out.x - 2.7).abs() < 1e-6 && (out.y - 4.4).abs() < 1e-6);
     // Head-on into a wall: stays (or creeps up to it) but never enters.
     let out = m.slide_move(p(1.5, 4.5), 0.0, 1.0, R);
-    assert!((out.y - (5.0 - R)).abs() < 0.01 && (out.x - 1.5).abs() < 1e-6, "{out:?}");
+    assert!(
+        (out.y - (5.0 - R)).abs() < 0.01 && (out.x - 1.5).abs() < 1e-6,
+        "{out:?}"
+    );
     // Non-finite delta is ignored.
     assert_eq!(m.slide_move(p(1.5, 4.5), f32::NAN, 0.0, R), p(1.5, 4.5));
 }
@@ -88,7 +97,10 @@ fn random_walks_never_end_inside_obstacles() {
             for _ in 0..400 {
                 let (dx, dy) = (rng.range(-0.4, 0.4), rng.range(-0.4, 0.4));
                 pos = m.slide_move(pos, dx, dy, 0.35);
-                assert!(m.circle_fits(pos.x, pos.y, pos.floor as i32, 0.35), "{kind} {pos:?}");
+                assert!(
+                    m.circle_fits(pos.x, pos.y, pos.floor as i32, 0.35),
+                    "{kind} {pos:?}"
+                );
             }
         }
     }

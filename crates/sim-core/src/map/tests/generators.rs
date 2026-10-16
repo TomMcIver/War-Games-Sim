@@ -24,9 +24,17 @@ fn every_generator_is_valid_and_connected_for_many_seeds() {
 fn generators_never_fall_back_to_arena() {
     for seed in 0..SEEDS {
         let b = generate("building", seed, 8);
-        assert_eq!((b.width, b.height, b.floors), (41, 29, 2), "building seed {seed}");
+        assert_eq!(
+            (b.width, b.height, b.floors),
+            (41, 29, 2),
+            "building seed {seed}"
+        );
         let v = generate("village", seed, 8);
-        assert_eq!((v.width, v.height, v.floors), (65, 65, 2), "village seed {seed}");
+        assert_eq!(
+            (v.width, v.height, v.floors),
+            (65, 65, 2),
+            "village seed {seed}"
+        );
     }
 }
 
@@ -50,7 +58,11 @@ fn generated_maps_are_point_symmetric() {
                 for y in 0..m.height as i32 {
                     for x in 0..m.width as i32 {
                         let (rx, ry, _) = m.rotate(x, y, f);
-                        assert_eq!(m.tile(x, y, f), m.tile(rx, ry, f), "{kind} {seed} {x},{y},{f}");
+                        assert_eq!(
+                            m.tile(x, y, f),
+                            m.tile(rx, ry, f),
+                            "{kind} {seed} {x},{y},{f}"
+                        );
                     }
                 }
             }
@@ -70,11 +82,17 @@ fn spawn_points_are_valid_distinct_opposite_and_reachable() {
                 assert_eq!((t0.len(), t1.len()), (n, n));
                 let all: Vec<_> = t0.iter().chain(&t1).collect();
                 for (i, a) in all.iter().enumerate() {
-                    assert!(m.circle_fits(a.x, a.y, a.floor as i32, 0.45), "{kind} {seed} {a:?}");
+                    assert!(
+                        m.circle_fits(a.x, a.y, a.floor as i32, 0.45),
+                        "{kind} {seed} {a:?}"
+                    );
                     for b in &all[i + 1..] {
                         assert!(a != b, "{kind} {seed}: duplicate spawn {a:?}");
                     }
-                    assert!(m.is_connected(**a, *all[0]), "{kind} {seed}: {a:?} unreachable");
+                    assert!(
+                        m.is_connected(**a, *all[0]),
+                        "{kind} {seed}: {a:?} unreachable"
+                    );
                 }
                 assert!(t0.iter().all(|q| q.x < mid) && t1.iter().all(|q| q.x > mid));
             }
@@ -88,7 +106,10 @@ fn spawn_points_are_spread_out() {
     let pts = m.spawn_points(0, 8);
     for (i, a) in pts.iter().enumerate() {
         for b in &pts[i + 1..] {
-            assert!((a.x - b.x).abs().max((a.y - b.y).abs()) >= 2.0, "{a:?} {b:?}");
+            assert!(
+                (a.x - b.x).abs().max((a.y - b.y).abs()) >= 2.0,
+                "{a:?} {b:?}"
+            );
         }
     }
 }
@@ -118,7 +139,10 @@ fn arena_scales_with_team_size_and_clamps() {
     assert_eq!(generate("arena", 0, 0), generate("arena", 0, 1));
     assert_eq!(generate("arena", 0, 99), generate("arena", 0, 8));
     let m = generate("arena", 3, 4);
-    assert!(count(&m, |t| t == Tile::Wall) > 2 * (m.width + m.height), "has cover");
+    assert!(
+        count(&m, |t| t == Tile::Wall) > 2 * (m.width + m.height),
+        "has cover"
+    );
 }
 
 #[test]
@@ -131,7 +155,10 @@ fn building_has_rooms_doors_windows_and_two_floors() {
             .flat_map(|y| (0..m.width as i32).map(move |x| (x, y)))
             .filter(|&(x, y)| m.is_walkable(x, y, 1))
             .count();
-        assert!(upper > 100, "seed {seed}: floor 1 has {upper} walkable tiles");
+        assert!(
+            upper > 100,
+            "seed {seed}: floor 1 has {upper} walkable tiles"
+        );
         // Upper floor outside the building is Void.
         assert_eq!(m.tile(2, 2, 1), Tile::Void);
     }
@@ -163,11 +190,19 @@ fn unknown_kind_errors_or_falls_back_to_arena() {
         try_generate("castle", 1, 2).unwrap_err(),
         MapError::UnknownKind("castle".into())
     );
-    assert!(MapError::UnknownKind("castle".into()).to_string().contains("arena"));
+    assert!(MapError::UnknownKind("castle".into())
+        .to_string()
+        .contains("arena"));
     assert_eq!(generate("castle", 1, 2), generate("arena", 1, 2));
-    assert_eq!(try_generate(" Village ", 1, 2).unwrap(), generate("village", 1, 2));
+    assert_eq!(
+        try_generate(" Village ", 1, 2).unwrap(),
+        generate("village", 1, 2)
+    );
     assert_eq!("BUILDING".parse::<MapKind>(), Ok(MapKind::Building));
-    assert_eq!(GameMap::generate("building", 4, 2), generate("building", 4, 2));
+    assert_eq!(
+        GameMap::generate("building", 4, 2),
+        generate("building", 4, 2)
+    );
     for name in MapKind::NAMES {
         assert_eq!(name.parse::<MapKind>().unwrap().name(), name);
     }

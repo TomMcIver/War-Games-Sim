@@ -66,7 +66,9 @@ impl GameMap {
             .tiles
             .iter()
             .enumerate()
-            .map(|(index, &value)| Tile::from_u8(value).ok_or(MapError::InvalidTile { index, value }))
+            .map(|(index, &value)| {
+                Tile::from_u8(value).ok_or(MapError::InvalidTile { index, value })
+            })
             .collect::<Result<Vec<_>, _>>()?;
         let mut m = GameMap::filled(raw.width, raw.height, raw.floors, Tile::Void);
         m.tiles = tiles;

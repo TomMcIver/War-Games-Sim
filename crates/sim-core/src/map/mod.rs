@@ -220,7 +220,10 @@ impl GameMap {
     /// Install team 0's ordered spawn zone; team 1's is its 180-degree
     /// rotation (same order), which keeps spawns fair on symmetric maps.
     pub(crate) fn set_spawn_zones(&mut self, team0: Vec<TileCoord>) {
-        let team1 = team0.iter().map(|&(x, y, f)| self.rotate(x, y, f)).collect();
+        let team1 = team0
+            .iter()
+            .map(|&(x, y, f)| self.rotate(x, y, f))
+            .collect();
         self.spawn_zones = [team0, team1];
     }
 
@@ -241,7 +244,10 @@ impl GameMap {
         if t == 0 {
             zone0
         } else {
-            zone0.iter().map(|&(x, y, f)| self.rotate(x, y, f)).collect()
+            zone0
+                .iter()
+                .map(|&(x, y, f)| self.rotate(x, y, f))
+                .collect()
         }
     }
 

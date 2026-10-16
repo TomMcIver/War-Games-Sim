@@ -113,7 +113,12 @@ impl Rect {
         self.y1 - self.y0 + 1
     }
     pub fn inner(self) -> Rect {
-        Rect { x0: self.x0 + 1, y0: self.y0 + 1, x1: self.x1 - 1, y1: self.y1 - 1 }
+        Rect {
+            x0: self.x0 + 1,
+            y0: self.y0 + 1,
+            x1: self.x1 - 1,
+            y1: self.y1 - 1,
+        }
     }
     pub fn cells(self) -> impl Iterator<Item = (i32, i32)> {
         (self.y0..=self.y1).flat_map(move |y| (self.x0..=self.x1).map(move |x| (x, y)))
@@ -139,9 +144,21 @@ pub(super) fn is_canonical(m: &GameMap, x: i32, y: i32) -> bool {
 /// Bordered single-floor canvas (walls on the edge, floor inside).
 pub(super) fn bordered(w: i32, h: i32, floors: usize) -> GameMap {
     let mut m = GameMap::filled(w as usize, h as usize, floors, Tile::Void);
-    for (x, y) in (Rect { x0: 0, y0: 0, x1: w - 1, y1: h - 1 }).cells() {
+    for (x, y) in (Rect {
+        x0: 0,
+        y0: 0,
+        x1: w - 1,
+        y1: h - 1,
+    })
+    .cells()
+    {
         let edge = x == 0 || y == 0 || x == w - 1 || y == h - 1;
-        m.set_tile(x as usize, y as usize, 0, if edge { Tile::Wall } else { Tile::Floor });
+        m.set_tile(
+            x as usize,
+            y as usize,
+            0,
+            if edge { Tile::Wall } else { Tile::Floor },
+        );
     }
     m
 }
@@ -224,9 +241,23 @@ pub(super) fn scatter_cover(m: &mut GameMap, rng: &mut ChaCha8Rng, region: Rect,
         }
         let x0 = rng.gen_range(region.x0..=region.x1 - w + 1);
         let y0 = rng.gen_range(region.y0..=region.y1 - h + 1);
-        let block = Rect { x0, y0, x1: x0 + w - 1, y1: y0 + h - 1 };
-        let tile = if rng.gen_bool(0.25) { Tile::Window } else { Tile::Wall };
-        let margin = Rect { x0: x0 - 1, y0: y0 - 1, x1: block.x1 + 1, y1: block.y1 + 1 };
+        let block = Rect {
+            x0,
+            y0,
+            x1: x0 + w - 1,
+            y1: y0 + h - 1,
+        };
+        let tile = if rng.gen_bool(0.25) {
+            Tile::Window
+        } else {
+            Tile::Wall
+        };
+        let margin = Rect {
+            x0: x0 - 1,
+            y0: y0 - 1,
+            x1: block.x1 + 1,
+            y1: block.y1 + 1,
+        };
         if !margin.cells().all(|(x, y)| m.tile(x, y, 0) == Tile::Floor) {
             continue;
         }
