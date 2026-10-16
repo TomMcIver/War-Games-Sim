@@ -288,25 +288,14 @@ impl From<serde_json::Error> for ReplayError {
 mod tests {
     use super::*;
     use crate::map::Tile;
-    use crate::types::Pos;
 
-    fn unit(id: usize, team: u8, x: f32, y: f32, alive: bool) -> Unit {
-        Unit {
-            id,
-            team,
-            pos: Pos { x, y, floor: 0 },
-            yaw: 0.5,
-            hp: if alive { 1.0 } else { 0.0 },
-            ammo: 30,
-            alive,
-            cooldown: 0,
-        }
-    }
-
+    // The world is built without units on purpose: `Unit` gains fields on the
+    // engine branch, so a struct literal here would break on merge. The
+    // Unit -> UnitFrame mapping is a plain field copy (see `From<&Unit>`).
     fn world() -> World {
         World {
-            map: GameMap::arena(6, 4),
-            units: vec![unit(0, 0, 1.5, 1.5, true), unit(1, 1, 4.5, 2.5, false)],
+            map: GameMap::filled(6, 4, 1, Tile::Floor),
+            units: vec![],
             tick: 7,
             shots: vec![ShotEvent {
                 shooter: 0,
@@ -318,6 +307,19 @@ mod tests {
         }
     }
 
+    fn unit_frame(id: usize, team: u8, alive: bool) -> UnitFrame {
+        UnitFrame {
+            id,
+            team,
+            x: 1.5 + id as f32,
+            y: 2.25,
+            floor: 0,
+            yaw: -0.5,
+            hp: if alive { 100.0 } else { 0.0 },
+            alive,
+        }
+    }
+
     fn sample_replay() -> Replay {
         let w = world();
         let mut writer = ReplayWriter::new(
@@ -325,7 +327,10 @@ mod tests {
             99,
             map_json(&w.map),
         );
-        writer.record(&w);
+        writer.push(Frame {
+            units: vec![unit_frame(0, 0, true), unit_frame(1, 1, false)],
+            ..Frame::from_world(&w)
+        });
         writer.push(Frame {
             tick: 8,
             units: vec![],
@@ -335,23 +340,10 @@ mod tests {
     }
 
     #[test]
-    fn frame_from_world_copies_units_and_shots() {
+    fn frame_from_world_copies_tick_and_shots() {
         let f = Frame::from_world(&world());
         assert_eq!(f.tick, 7);
-        assert_eq!(f.units.len(), 2);
-        assert_eq!(
-            f.units[1],
-            UnitFrame {
-                id: 1,
-                team: 1,
-                x: 4.5,
-                y: 2.5,
-                floor: 0,
-                yaw: 0.5,
-                hp: 0.0,
-                alive: false
-            }
-        );
+        assert!(f.units.is_empty());
         assert_eq!(
             f.shots,
             vec![ShotFrame {
@@ -398,7 +390,7 @@ mod tests {
 
     #[test]
     fn floats_are_rounded_to_three_decimals() {
-        let mut f = Frame::from_world(&world());
+        let mut f = sample_replay().frames[0].clone();
         f.units[0].x = 1.234_567;
         f.units[0].yaw = std::f32::consts::PI;
         f.units[0].hp = f32::NAN;
