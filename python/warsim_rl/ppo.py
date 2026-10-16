@@ -252,10 +252,10 @@ class MAPPO:
             approx_kl = masked_mean((ratio - 1) - log_ratio, mask)
             clipfrac = masked_mean(((ratio - 1).abs() > cfg.clip).float(), mask)
         return {
-            "loss": float(loss),
-            "pg_loss": float(pg_loss),
-            "v_loss": float(v_loss),
-            "entropy": float(ent),
+            "loss": loss.item(),
+            "pg_loss": pg_loss.item(),
+            "v_loss": v_loss.item(),
+            "entropy": ent.item(),
             "approx_kl": float(approx_kl),
             "clipfrac": float(clipfrac),
             "grad_norm": float(grad_norm),
