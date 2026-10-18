@@ -27,6 +27,14 @@ class Curriculum:
     def current(self) -> StageConfig:
         return self.stages[self.index]
 
+    def rehearsal_stages(self) -> list[StageConfig]:
+        """Earlier stages that can share a training batch with the current one.
+
+        The model's unit count is fixed by team size, so only earlier stages
+        with the current team size qualify."""
+        current = self.current()
+        return [s for s in self.stages[: self.index] if s.team_size == current.team_size]
+
     @property
     def is_last(self) -> bool:
         return self.index >= len(self.stages) - 1

@@ -78,10 +78,12 @@ def evaluate_fixed(trainer: Trainer, stage, seeds: tuple[int, ...], episodes: in
 
 
 def run(minutes: float, seed: int, name: str, chunk_updates: int,
-        validation_episodes: int, resume: bool = False) -> Path:
+        validation_episodes: int, resume: bool = False, rehearsal_frac: float = 0.0) -> Path:
     cfg = load_config("warsim_small")
     cfg.name = name
     cfg.seed = seed
+    cfg.curriculum.rehearsal_frac = rehearsal_frac
+    cfg.validate()
     cfg.log_every = chunk_updates
     cfg.eval_every = chunk_updates
     cfg.eval_episodes = 64
@@ -166,7 +168,8 @@ def run(minutes: float, seed: int, name: str, chunk_updates: int,
     finally:
         trainer.close()
     (run_dir / "experiment.json").write_text(json.dumps({
-        "minutes_budget": minutes, "seed": seed, "validation_seeds": VALIDATION_SEEDS,
+        "minutes_budget": minutes, "seed": seed, "rehearsal_frac": rehearsal_frac,
+        "validation_seeds": VALIDATION_SEEDS,
         "validation_episodes_per_seed": validation_episodes,
         "updates_completed": trainer.update,
         "elapsed_minutes": round((time.monotonic() - start) / 60, 3),
@@ -182,11 +185,13 @@ def main(argv: list[str] | None = None) -> None:
     parser.add_argument("--chunk-updates", type=int, default=50)
     parser.add_argument("--validation-episodes-per-seed", type=int, default=32)
     parser.add_argument("--resume", action="store_true", help="resume the last completed chunk")
+    parser.add_argument("--rehearsal-frac", type=float, default=0.0,
+                        help="share of training envs that replay earlier stages after promotion")
     args = parser.parse_args(argv)
     if args.minutes <= 0 or args.chunk_updates < 1 or args.validation_episodes_per_seed < 2:
         parser.error("minutes, chunk-updates, and validation episodes must be positive")
     run(args.minutes, args.seed, args.name, args.chunk_updates,
-        args.validation_episodes_per_seed, args.resume)
+        args.validation_episodes_per_seed, args.resume, args.rehearsal_frac)
 
 
 if __name__ == "__main__":

@@ -17,7 +17,7 @@ import torch
 from .checkpoint import load_file, save_trainer
 from .config import TrainConfig, config_to_dict
 from .curriculum import Curriculum
-from .env_factory import make_vec_env
+from .env_factory import MixedVecEnv, make_vec_env
 from .evaluate import play_match
 from .league import LATEST, League
 from .logger import CsvLogger
@@ -71,16 +71,37 @@ class Trainer:
         self._build_envs()
 
     # ---------------------------------------------------------------- envs
-    def _build_envs(self) -> None:
+    def _env_mix(self) -> list:
+        """``(stage, n_envs)`` per part of the training batch, current stage first.
+
+        With ``curriculum.rehearsal_frac`` > 0 and earlier stages of the same
+        team size, that share of envs is split across those stages."""
+        total = self.cfg.env.n_envs
         stage = self.curriculum.current()
-        self.env = make_vec_env(
-            self.cfg.env,
-            seed=self.cfg.seed * 7919 + self.update,
-            team_size=stage.team_size,
-            map_kind=stage.map_kind,
-            scenario=stage.scenario,
-            max_ticks=stage.max_ticks,
-        )
+        earlier = self.curriculum.rehearsal_stages()
+        n_rehearse = min(round(self.cfg.curriculum.rehearsal_frac * total), total - 1)
+        if not earlier or n_rehearse < 1:
+            return [(stage, total)]
+        earlier = earlier[-n_rehearse:]  # fewer envs than stages: keep the most recent
+        base, extra = divmod(n_rehearse, len(earlier))
+        counts = [base + (i >= len(earlier) - extra) for i in range(len(earlier))]
+        return [(stage, total - n_rehearse), *zip(earlier, counts)]
+
+    def _build_envs(self) -> None:
+        seed = self.cfg.seed * 7919 + self.update
+        parts = [
+            make_vec_env(
+                self.cfg.env,
+                seed=seed + 1009 * i,
+                n_envs=n,
+                team_size=stage.team_size,
+                map_kind=stage.map_kind,
+                scenario=stage.scenario,
+                max_ticks=stage.max_ticks,
+            )
+            for i, (stage, n) in enumerate(self._env_mix())
+        ]
+        self.env = parts[0] if len(parts) == 1 else MixedVecEnv(parts)
         self.collector = Collector(
             self.env,
             self.model,
@@ -136,7 +157,7 @@ class Trainer:
             evaluated = cfg.eval_every > 0 and self.update % cfg.eval_every == 0
             if evaluated:
                 self.last_eval = self.evaluate_vs_random()
-            promoted = self._curriculum_step(evaluated, len(results))
+            promoted = self._curriculum_step(evaluated, results)
 
             elapsed = time.perf_counter() - t0
             row = self._row(stats, results, scale, steps, elapsed, t_collect)
@@ -148,13 +169,17 @@ class Trainer:
                 self.save()
         return self.last_row
 
-    def _curriculum_step(self, evaluated: bool, completed_episodes: int) -> bool:
+    def _curriculum_step(self, evaluated: bool, results: list) -> bool:
+        # Rehearsal envs (index >= n_current) never count toward promotion.
+        n_current = getattr(self.env, "n_current", self.env.n_envs)
         if self.curriculum.metric == "eval_random":
             metric = self.last_eval["win_rate"] if evaluated else None
         else:
-            pool = [float(r.score == 1.0) for r in self.recent if r.opponent != LATEST]
+            pool = [float(r.score == 1.0) for r in self.recent
+                    if r.opponent != LATEST and r.env_index < n_current]
             metric = _mean(pool) if len(pool) >= 20 else None
-        promoted = self.curriculum.step(metric, completed_episodes)
+        completed = sum(r.env_index < n_current for r in results)
+        promoted = self.curriculum.step(metric, completed)
         if promoted:
             self.env.close()
             self._build_envs()

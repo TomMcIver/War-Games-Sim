@@ -106,6 +106,9 @@ class StageConfig:
 class CurriculumConfig:
     stages: list = field(default_factory=list)  # list[StageConfig]
     metric: str = "eval_random"  # "eval_random" | "league"
+    # Share of training envs that keep playing earlier stages of the same team
+    # size after a promotion, to limit forgetting. 0 disables.
+    rehearsal_frac: float = 0.0
 
 
 @dataclass
@@ -144,6 +147,8 @@ class TrainConfig:
             raise ValueError("league.pfsp_mode must be hard | even | uniform")
         if self.curriculum.metric not in ("eval_random", "league"):
             raise ValueError("curriculum.metric must be eval_random | league")
+        if not 0.0 <= self.curriculum.rehearsal_frac < 1.0:
+            raise ValueError("curriculum.rehearsal_frac must be in [0, 1)")
         if self.env.kind == "warsim":
             scenarios = {"standard", "duel", "cover", "door", "skirmish"}
             for stage in self.curriculum.stages or [StageConfig(

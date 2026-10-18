@@ -86,6 +86,7 @@ class EpisodeResult:
     score: float
     ret: float
     length: int
+    env_index: int = 0
 
 
 class Collector:
@@ -177,7 +178,8 @@ class Collector:
             score = episode_score(int(infos["winner"][e]), team)
             results.append(
                 EpisodeResult(
-                    self.opponent[e], team, score, float(self.ep_return[e]), int(infos["episode_len"][e])
+                    self.opponent[e], team, score, float(self.ep_return[e]),
+                    int(infos["episode_len"][e]), int(e),
                 )
             )
             self.league.record(self.opponent[e], score)
