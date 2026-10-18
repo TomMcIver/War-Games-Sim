@@ -48,6 +48,7 @@ impl PyVecEnv {
     #[pyo3(signature = (
         n_envs, team_size=2, map_kind="arena", max_ticks=600, seed=0,
         tick_seconds=0.1, num_threads=None, *,
+        scenario="standard",
         reward_win=None, reward_loss=None, reward_draw=None,
         reward_damage_dealt=None, reward_kill=None, reward_damage_taken=None,
         reward_time_penalty=None, reward_ammo_waste=None, shaping_scale=None
@@ -62,6 +63,7 @@ impl PyVecEnv {
         seed: i128,
         tick_seconds: f64,
         num_threads: Option<i128>,
+        scenario: &str,
         reward_win: Option<f64>,
         reward_loss: Option<f64>,
         reward_draw: Option<f64>,
@@ -76,6 +78,7 @@ impl PyVecEnv {
             n_envs,
             team_size,
             map_kind,
+            scenario,
             max_ticks,
             seed,
             tick_seconds,
@@ -153,6 +156,75 @@ impl PyVecEnv {
             "episode_len",
             to_numpy(py, "episode_len", &buffers.episode_len, &[e])?,
         )?;
+        let stats = PyDict::new(py);
+        let episodes = &buffers.episode_stats;
+        stats.set_item(
+            "termination",
+            PyArray1::from_iter(py, episodes.iter().map(|s| s.termination as u8)),
+        )?;
+        stats.set_item(
+            "shots_fired",
+            PyArray1::from_iter(py, episodes.iter().map(|s| s.shots_fired)),
+        )?;
+        stats.set_item(
+            "shots_hit",
+            PyArray1::from_iter(py, episodes.iter().map(|s| s.shots_hit)),
+        )?;
+        stats.set_item(
+            "damage_dealt",
+            PyArray1::from_iter(py, episodes.iter().map(|s| s.damage_dealt)),
+        )?;
+        stats.set_item(
+            "kills",
+            PyArray1::from_iter(py, episodes.iter().map(|s| s.kills)),
+        )?;
+        stats.set_item(
+            "deaths",
+            PyArray1::from_iter(py, episodes.iter().map(|s| s.deaths)),
+        )?;
+        stats.set_item(
+            "contact_ticks",
+            PyArray1::from_iter(py, episodes.iter().map(|s| s.contact_ticks)),
+        )?;
+        stats.set_item(
+            "ending_ammo",
+            PyArray1::from_iter(py, episodes.iter().map(|s| s.ending_ammo)),
+        )?;
+        stats.set_item(
+            "survivors_team0",
+            PyArray1::from_iter(py, episodes.iter().map(|s| s.survivors_team0)),
+        )?;
+        stats.set_item(
+            "survivors_team1",
+            PyArray1::from_iter(py, episodes.iter().map(|s| s.survivors_team1)),
+        )?;
+        for team in 0..2 {
+            stats.set_item(
+                format!("shots_fired_team{team}"),
+                PyArray1::from_iter(py, episodes.iter().map(|s| s.team_shots_fired[team])),
+            )?;
+            stats.set_item(
+                format!("shots_hit_team{team}"),
+                PyArray1::from_iter(py, episodes.iter().map(|s| s.team_shots_hit[team])),
+            )?;
+            stats.set_item(
+                format!("damage_dealt_team{team}"),
+                PyArray1::from_iter(py, episodes.iter().map(|s| s.team_damage_dealt[team])),
+            )?;
+            stats.set_item(
+                format!("kills_team{team}"),
+                PyArray1::from_iter(py, episodes.iter().map(|s| s.team_kills[team])),
+            )?;
+            stats.set_item(
+                format!("deaths_team{team}"),
+                PyArray1::from_iter(py, episodes.iter().map(|s| s.team_deaths[team])),
+            )?;
+            stats.set_item(
+                format!("ending_ammo_team{team}"),
+                PyArray1::from_iter(py, episodes.iter().map(|s| s.team_ending_ammo[team])),
+            )?;
+        }
+        infos.set_item("episode_stats", stats)?;
         Ok((obs, rewards, dones, infos))
     }
 
@@ -281,6 +353,15 @@ impl PyVecEnv {
             to_numpy(py, "state", &b.state, &[e, u * STATE_FEATS])?,
         )?;
         obs.set_item("alive", to_numpy(py, "alive", &b.alive, &[e, u])?)?;
+        obs.set_item(
+            "action_availability",
+            to_numpy(
+                py,
+                "action_availability",
+                &b.action_availability,
+                &[e, u, 2],
+            )?,
+        )?;
         Ok(obs)
     }
 }

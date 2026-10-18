@@ -15,7 +15,7 @@
 
 use rayon::prelude::*;
 
-use crate::env::{Env, EnvConfig};
+use crate::env::{Env, EnvConfig, EpisodeStats};
 use crate::obs::{self, ObsMemory, LOCAL_MAP_LEN};
 use crate::types::*;
 
@@ -32,6 +32,8 @@ pub struct VecEnvBuffers {
     pub state: Vec<f32>,
     /// `E*U`
     pub alive: Vec<f32>,
+    /// `E*U*2`: shoot and interact physically available on the next tick.
+    pub action_availability: Vec<f32>,
     /// `E*U`
     pub rewards: Vec<f32>,
     /// `E`
@@ -40,6 +42,8 @@ pub struct VecEnvBuffers {
     pub winners: Vec<i8>,
     /// `E` (valid when `dones[e] == 1`)
     pub episode_len: Vec<u32>,
+    /// `E` (default on non-terminal steps; finished episode on done steps).
+    pub episode_stats: Vec<EpisodeStats>,
 }
 
 impl VecEnvBuffers {
@@ -50,10 +54,12 @@ impl VecEnvBuffers {
             local_map: vec![0.0; n_envs * n_units * LOCAL_MAP_LEN],
             state: vec![0.0; n_envs * obs::state_len(n_units)],
             alive: vec![0.0; n_envs * n_units],
+            action_availability: vec![0.0; n_envs * n_units * 2],
             rewards: vec![0.0; n_envs * n_units],
             dones: vec![0; n_envs],
             winners: vec![-1; n_envs],
             episode_len: vec![0; n_envs],
+            episode_stats: vec![EpisodeStats::default(); n_envs],
         }
     }
 }
@@ -101,10 +107,12 @@ struct EnvOut<'a> {
     local_map: &'a mut [f32],
     state: &'a mut [f32],
     alive: &'a mut [f32],
+    action_availability: &'a mut [f32],
     rewards: &'a mut [f32],
     done: &'a mut u8,
     winner: &'a mut i8,
     episode_len: &'a mut u32,
+    episode_stats: &'a mut EpisodeStats,
 }
 
 impl EnvOut<'_> {
@@ -118,6 +126,7 @@ impl EnvOut<'_> {
             self.state,
             self.alive,
         );
+        slot.env.write_action_availability(self.action_availability);
     }
 
     fn clear_step_info(&mut self) {
@@ -125,6 +134,7 @@ impl EnvOut<'_> {
         *self.done = 0;
         *self.winner = -1;
         *self.episode_len = 0;
+        *self.episode_stats = EpisodeStats::default();
     }
 }
 
@@ -241,10 +251,12 @@ impl VecEnv {
                 b.local_map.par_chunks_mut(u * LOCAL_MAP_LEN),
                 b.state.par_chunks_mut(obs::state_len(u)),
                 b.alive.par_chunks_mut(u),
+                b.action_availability.par_chunks_mut(u * 2),
                 b.rewards.par_chunks_mut(u),
                 b.dones.par_iter_mut(),
                 b.winners.par_iter_mut(),
                 b.episode_len.par_iter_mut(),
+                b.episode_stats.par_iter_mut(),
             )
                 .into_par_iter()
                 .enumerate()
@@ -258,10 +270,12 @@ impl VecEnv {
                             local_map,
                             state,
                             alive,
+                            action_availability,
                             rewards,
                             done,
                             winner,
                             episode_len,
+                            episode_stats,
                         ),
                     )| {
                         let acts = if actions.is_empty() {
@@ -275,10 +289,12 @@ impl VecEnv {
                             local_map,
                             state,
                             alive,
+                            action_availability,
                             rewards,
                             done,
                             winner,
                             episode_len,
+                            episode_stats,
                         };
                         f(slot, acts, &mut out);
                     },
@@ -323,11 +339,13 @@ fn step_one(slot: &mut EnvSlot, acts: &[u8], out: &mut EnvOut<'_>, base_seed: u6
         *out.done = 1;
         *out.winner = result.winner.map_or(-1, |t| t as i8);
         *out.episode_len = slot.steps;
+        *out.episode_stats = result.episode_stats.expect("terminal episode stats");
         slot.start_episode(base_seed);
     } else {
         *out.done = 0;
         *out.winner = -1;
         *out.episode_len = 0;
+        *out.episode_stats = EpisodeStats::default();
     }
     out.write_obs(slot);
 }
@@ -366,6 +384,7 @@ mod tests {
         assert_eq!(b.state.len(), e * u * STATE_FEATS);
         assert_eq!(b.alive.len(), e * u);
         assert_eq!(b.rewards.len(), e * u);
+        assert_eq!(b.episode_stats.len(), e);
         assert_eq!(
             (b.dones.len(), b.winners.len(), b.episode_len.len()),
             (e, e, e)
@@ -499,11 +518,17 @@ mod tests {
             for e in 0..v.n_envs {
                 if b.dones[e] == 0 {
                     assert_eq!((b.winners[e], b.episode_len[e]), (-1, 0));
+                    assert_eq!(b.episode_stats[e], EpisodeStats::default());
                     continue;
                 }
                 finished += 1;
                 assert!((1..=max_ticks).contains(&b.episode_len[e]));
                 assert!((-1..=1).contains(&b.winners[e]));
+                assert_ne!(
+                    b.episode_stats[e].termination,
+                    crate::env::TerminationReason::None
+                );
+                assert!(b.episode_stats[e].contact_ticks <= b.episode_len[e]);
                 // Obs already show the first obs of the next episode.
                 let slot = &v.slots[e];
                 assert_eq!(slot.steps, 0);

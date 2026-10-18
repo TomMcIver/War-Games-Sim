@@ -46,9 +46,21 @@ def test_reset_and_step_shapes_and_dtypes(make_env, team_size):
     assert rewards.dtype == np.float32 and rewards.shape == (e, u)
     assert np.isfinite(rewards).all()
     assert dones.dtype == np.bool_ and dones.shape == (e,)
-    assert set(infos) == {"winner", "episode_len"}
+    assert set(infos) == {"winner", "episode_len", "episode_stats"}
     assert infos["winner"].dtype == np.int8 and infos["winner"].shape == (e,)
     assert infos["episode_len"].dtype == np.uint32 and infos["episode_len"].shape == (e,)
+    expected_stats = {
+        "termination", "shots_fired", "shots_hit", "damage_dealt", "kills", "deaths",
+        "contact_ticks", "ending_ammo", "survivors_team0", "survivors_team1",
+    }
+    expected_stats.update(
+        f"{key}_team{team}"
+        for key in ("shots_fired", "shots_hit", "damage_dealt", "kills", "deaths", "ending_ammo")
+        for team in (0, 1)
+    )
+    assert set(infos["episode_stats"]) == expected_stats
+    for value in infos["episode_stats"].values():
+        assert value.shape == (e,)
 
 
 @pytest.mark.parametrize("map_kind", ["arena", "building", "village"])
@@ -77,7 +89,12 @@ def assert_frames_equal(a: list, b: list) -> None:
             if isinstance(xa, dict):
                 assert xa.keys() == xb.keys()
                 for k in xa:
-                    np.testing.assert_array_equal(xa[k], xb[k], err_msg=k)
+                    if isinstance(xa[k], dict):
+                        assert xa[k].keys() == xb[k].keys()
+                        for field in xa[k]:
+                            np.testing.assert_array_equal(xa[k][field], xb[k][field], err_msg=field)
+                    else:
+                        np.testing.assert_array_equal(xa[k], xb[k], err_msg=k)
             else:
                 np.testing.assert_array_equal(xa, xb)
 
@@ -128,6 +145,9 @@ def test_auto_reset_on_timeout(make_env):
             assert (infos["episode_len"] == infos["episode_len"][0]).all()
             assert 1 <= int(infos["episode_len"][0]) <= max_ticks
             assert np.isin(infos["winner"], (-1, 0, 1)).all()
+            assert (infos["episode_stats"]["termination"] == 3).all()
+            assert (infos["episode_stats"]["shots_fired"] == 0).all()
+            assert (infos["episode_stats"]["ending_ammo"] == 2 * 30).all()
             # Returned obs is the first obs of the next episode.
             assert (obs["alive"] == 1.0).all()
             done_steps.append((step, int(infos["episode_len"][0])))

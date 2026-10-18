@@ -8,6 +8,7 @@ use sim_core::{EnvConfig, MAX_TEAM_SIZE};
 
 /// Map generators known to sim-core (see `EnvConfig::map_kind`).
 pub const MAP_KINDS: [&str; 3] = ["arena", "building", "village"];
+pub const SCENARIOS: [&str; 5] = ["standard", "duel", "cover", "door", "skirmish"];
 
 /// Upper bound on `n_envs`: keeps buffer sizes far from allocation failure
 /// (which would abort the interpreter instead of raising).
@@ -36,6 +37,7 @@ pub struct RawArgs<'a> {
     pub n_envs: i128,
     pub team_size: i128,
     pub map_kind: &'a str,
+    pub scenario: &'a str,
     pub max_ticks: i128,
     pub seed: i128,
     pub tick_seconds: f64,
@@ -136,6 +138,22 @@ pub fn validate(raw: &RawArgs<'_>) -> Result<Settings, String> {
             raw.map_kind
         ));
     }
+    if !SCENARIOS.contains(&raw.scenario) {
+        return Err(format!(
+            "scenario must be one of {SCENARIOS:?}, got {:?}",
+            raw.scenario
+        ));
+    }
+    if (["duel", "cover", "door"].contains(&raw.scenario) && team_size != 1)
+        || (raw.scenario == "skirmish" && team_size != 2)
+    {
+        return Err(format!(
+            "scenario {:?} requires {}v{}",
+            raw.scenario,
+            if raw.scenario == "skirmish" { 2 } else { 1 },
+            if raw.scenario == "skirmish" { 2 } else { 1 }
+        ));
+    }
     let tick_seconds = finite_f32("tick_seconds", raw.tick_seconds, true)?;
     if tick_seconds <= 0.0 {
         return Err(format!(
@@ -152,6 +170,7 @@ pub fn validate(raw: &RawArgs<'_>) -> Result<Settings, String> {
         max_ticks: max_ticks as u32,
         tick_seconds,
         map_kind: raw.map_kind.to_owned(),
+        scenario: raw.scenario.to_owned(),
         reward,
         ..defaults
     };

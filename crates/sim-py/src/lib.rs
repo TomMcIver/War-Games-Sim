@@ -25,6 +25,7 @@ fn warsim(m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Tuples (immutable) so callers cannot accidentally mutate module constants.
     m.add("ACTION_DIMS", PyTuple::new(m.py(), ACTION_DIMS)?)?;
     m.add("MAP_KINDS", PyTuple::new(m.py(), config::MAP_KINDS)?)?;
+    m.add("SCENARIOS", PyTuple::new(m.py(), config::SCENARIOS)?)?;
     m.add_class::<py_vec_env::PyVecEnv>()?;
     Ok(())
 }
