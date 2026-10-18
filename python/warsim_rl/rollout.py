@@ -29,6 +29,7 @@ def gather_agents(obs: dict, e_idx: np.ndarray, u_idx: np.ndarray) -> dict:
         "token_mask": obs["token_mask"][e_idx, u_idx],
         "local_map": obs["local_map"][e_idx, u_idx],
         "alive": obs["alive"][e_idx, u_idx],
+        "action_availability": obs["action_availability"][e_idx, u_idx],
         "state": obs["state"][e_idx],
         "agent_idx": u_idx.astype(np.int64),
     }
@@ -146,6 +147,7 @@ class Collector:
             token_mask=nl(obs["token_mask"]),
             local_map=nl(obs["local_map"]),
             alive=nl(obs["alive"]),
+            action_availability=nl(obs["action_availability"]),
             state=torch.as_tensor(self.obs["state"]),
             agent_idx=nl(obs["agent_idx"]),
             actions=nl(acts),

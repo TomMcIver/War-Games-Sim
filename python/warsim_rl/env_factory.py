@@ -76,7 +76,14 @@ def normalise_infos(infos: Any, n_envs: int, dones: np.ndarray) -> dict:
                 winner[e] = int(info.get("winner", -1))
                 length[e] = int(info.get("episode_len", 0))
     winner = np.where(dones, winner, -1).astype(np.int8)
-    return {"winner": winner, "episode_len": length}
+    result = {"winner": winner, "episode_len": length}
+    if isinstance(infos, dict) and "episode_stats" in infos:
+        stats = infos["episode_stats"]
+        result["episode_stats"] = {
+            key: np.where(dones, np.asarray(value).reshape(n_envs), 0)
+            for key, value in stats.items()
+        }
+    return result
 
 
 def make_vec_env(
@@ -85,6 +92,7 @@ def make_vec_env(
     n_envs: Optional[int] = None,
     team_size: Optional[int] = None,
     map_kind: Optional[str] = None,
+    scenario: Optional[str] = None,
     max_ticks: Optional[int] = None,
 ) -> VecEnvAdapter:
     n = int(n_envs if n_envs is not None else cfg.n_envs)
@@ -100,6 +108,7 @@ def make_vec_env(
     if cfg.kind == "mock":
         return VecEnvAdapter(MockVecEnv(**kwargs), n, ts)
     if cfg.kind == "warsim":
+        kwargs["scenario"] = scenario if scenario is not None else cfg.scenario
         try:
             import warsim  # type: ignore
         except ImportError as exc:

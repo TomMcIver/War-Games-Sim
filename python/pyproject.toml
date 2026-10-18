@@ -12,6 +12,7 @@ dependencies = ["numpy", "torch"]
 [project.optional-dependencies]
 test = ["pytest"]
 yaml = ["pyyaml"]
+plot = ["matplotlib>=3.8"]
 
 [project.scripts]
 warsim-train = "warsim_rl.train:main"

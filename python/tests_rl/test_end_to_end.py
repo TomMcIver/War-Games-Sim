@@ -5,8 +5,9 @@ import json
 
 from warsim_rl import evaluate, train
 from warsim_rl.config import StageConfig, load_config
+from warsim_rl.curriculum import Curriculum
 from warsim_rl.env_factory import make_vec_env
-from warsim_rl.evaluate import play_match
+from warsim_rl.evaluate import play_match, summarize_telemetry
 from warsim_rl.policies import IdlePolicy, RandomPolicy
 from warsim_rl.trainer import Trainer
 
@@ -63,13 +64,16 @@ def test_same_seed_same_results(tmp_path):
         assert rows[0][key] == rows[1][key], key
 
 
-def test_curriculum_promotion_rebuilds_env(tmp_path):
+def test_curriculum_promotion_rebuilds_env(tmp_path, monkeypatch):
     cfg = tiny(tmp_path, name="cur", total_updates=4, eval_every=1)
     cfg.curriculum.stages = [
         StageConfig(team_size=1, map_kind="open", promote_winrate=0.0, min_updates=1),
         StageConfig(team_size=3, map_kind="cover", promote_winrate=2.0, min_updates=1),
     ]
     t = Trainer(cfg, quiet=True)
+    monkeypatch.setattr(t, "evaluate_vs_random", lambda: {
+        "win_rate": 1.0, "draw_rate": 0.0, "loss_rate": 0.0,
+    })
     t.train()
     assert t.curriculum.index == 1 and t.env.n_units == 6
     rows = read_rows(tmp_path / "cur" / "metrics.csv")
@@ -85,3 +89,31 @@ def test_play_match_random_vs_idle_and_quota():
     res = play_match(RandomPolicy(0), IdlePolicy(), env, episodes=10)
     assert res.episodes == 10
     assert res.losses == 0  # idle never shoots, so it can never win
+
+
+def test_episode_telemetry_summary_distinguishes_timeout_and_no_contact():
+    rows = [
+        dict(termination=3, contact_ticks=0, shots_fired=0, shots_hit=0,
+             damage_dealt=0, kills=0, deaths=0, ending_ammo=60),
+        dict(termination=1, contact_ticks=8, shots_fired=4, shots_hit=2,
+             damage_dealt=50, kills=1, deaths=1, ending_ammo=56),
+    ]
+    report = summarize_telemetry(rows, [20, 10])
+    assert report["timeouts"] == 1 and report["team_wipes"] == 1
+    assert report["contact_episode_rate"] == 0.5
+    assert report["hit_rate"] == 0.5
+    assert report["contact_tick_rate"] == 8 / 30
+    assert report["mean_ending_ammo"] == 58
+
+
+def test_real_curriculum_needs_wins_and_completed_episodes():
+    cfg = load_config("warsim_small")
+    stage = cfg.curriculum.stages[0]
+    assert stage.scenario == "duel" and stage.min_episodes > 0
+    curriculum = Curriculum(cfg.curriculum, cfg.env)
+    for _ in range(stage.min_updates):
+        assert not curriculum.step(0.0, 0)  # draws cannot promote
+    assert not curriculum.step(1.0, 0)  # fewer than minimum episodes
+    assert curriculum.step(1.0, stage.min_episodes)
+    assert curriculum.current().scenario == "cover"
+    assert curriculum.episodes_in_stage == 0

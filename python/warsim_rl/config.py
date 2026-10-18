@@ -22,6 +22,7 @@ class EnvConfig:
     n_envs: int = 32
     team_size: int = 2
     map_kind: str = "arena"
+    scenario: str = "standard"
     max_ticks: int = 120
     # Shaping rewards are rescaled on the Python side (terminal +-1 untouched),
     # annealed linearly from shaping_scale to shaping_scale_final.
@@ -47,6 +48,7 @@ class ModelConfig:
     critic_hidden: int = 128
     critic_use_actor_feat: bool = True
     mask_dead_actions: bool = True
+    mask_unavailable_actions: bool = True
 
 
 @dataclass
@@ -96,6 +98,8 @@ class StageConfig:
     max_ticks: Optional[int] = None
     promote_winrate: float = 0.8
     min_updates: int = 10
+    scenario: str = "standard"
+    min_episodes: int = 0
 
 
 @dataclass
@@ -140,6 +144,18 @@ class TrainConfig:
             raise ValueError("league.pfsp_mode must be hard | even | uniform")
         if self.curriculum.metric not in ("eval_random", "league"):
             raise ValueError("curriculum.metric must be eval_random | league")
+        if self.env.kind == "warsim":
+            scenarios = {"standard", "duel", "cover", "door", "skirmish"}
+            for stage in self.curriculum.stages or [StageConfig(
+                self.env.team_size, self.env.map_kind, scenario=self.env.scenario
+            )]:
+                if stage.scenario not in scenarios:
+                    raise ValueError(f"unknown scenario {stage.scenario!r}")
+                expected = 2 if stage.scenario == "skirmish" else 1
+                if stage.scenario != "standard" and stage.team_size != expected:
+                    raise ValueError(f"scenario {stage.scenario!r} requires team_size={expected}")
+                if stage.min_episodes < 0:
+                    raise ValueError("stage.min_episodes must be >= 0")
 
 
 def _build(cls: type, data: Any) -> Any:

@@ -78,6 +78,7 @@ class Trainer:
             seed=self.cfg.seed * 7919 + self.update,
             team_size=stage.team_size,
             map_kind=stage.map_kind,
+            scenario=stage.scenario,
             max_ticks=stage.max_ticks,
         )
         self.collector = Collector(
@@ -99,6 +100,7 @@ class Trainer:
             n_envs=min(self.cfg.env.eval_envs, episodes),
             team_size=stage.team_size,
             map_kind=stage.map_kind,
+            scenario=stage.scenario,
             max_ticks=stage.max_ticks,
         )
         try:
@@ -107,16 +109,17 @@ class Trainer:
             )
         finally:
             env.close()
-        return {**res.rates(), "mean_len": res.mean_len}
+        return {**res.rates(), "mean_len": res.mean_len, **res.telemetry}
 
     # ---------------------------------------------------------------- loop
     def shaping_scale(self, progress: float) -> float:
         e = self.cfg.env
         return e.shaping_scale + (e.shaping_scale_final - e.shaping_scale) * progress
 
-    def train(self) -> dict:
+    def train(self, until_update: Optional[int] = None) -> dict:
         cfg = self.cfg
-        while self.update < cfg.total_updates:
+        limit = cfg.total_updates if until_update is None else min(until_update, cfg.total_updates)
+        while self.update < limit:
             t0 = time.perf_counter()
             progress = self.update / max(cfg.total_updates, 1)
             scale = self.shaping_scale(progress)
@@ -133,7 +136,7 @@ class Trainer:
             evaluated = cfg.eval_every > 0 and self.update % cfg.eval_every == 0
             if evaluated:
                 self.last_eval = self.evaluate_vs_random()
-            promoted = self._curriculum_step(evaluated)
+            promoted = self._curriculum_step(evaluated, len(results))
 
             elapsed = time.perf_counter() - t0
             row = self._row(stats, results, scale, steps, elapsed, t_collect)
@@ -145,13 +148,13 @@ class Trainer:
                 self.save()
         return self.last_row
 
-    def _curriculum_step(self, evaluated: bool) -> bool:
+    def _curriculum_step(self, evaluated: bool, completed_episodes: int) -> bool:
         if self.curriculum.metric == "eval_random":
             metric = self.last_eval["win_rate"] if evaluated else None
         else:
-            pool = [r.score for r in self.recent if r.opponent != LATEST]
+            pool = [float(r.score == 1.0) for r in self.recent if r.opponent != LATEST]
             metric = _mean(pool) if len(pool) >= 20 else None
-        promoted = self.curriculum.step(metric)
+        promoted = self.curriculum.step(metric, completed_episodes)
         if promoted:
             self.env.close()
             self._build_envs()
@@ -169,6 +172,8 @@ class Trainer:
             "stage": self.curriculum.index,
             "team_size": stage.team_size,
             "map_kind": stage.map_kind,
+            "scenario": stage.scenario,
+            "episodes_in_stage": self.curriculum.episodes_in_stage,
             "episodes": len(results),
             "win_rate": _mean([float(s == 1.0) for s in scores]),
             "draw_rate": _mean([float(s == 0.5) for s in scores]),
@@ -180,6 +185,10 @@ class Trainer:
             "eval_win_rate_random": self.last_eval["win_rate"],
             "eval_draw_rate_random": self.last_eval["draw_rate"],
             "eval_loss_rate_random": self.last_eval["loss_rate"],
+            "eval_timeout_rate_random": self.last_eval.get("timeout_rate", NAN),
+            "eval_contact_rate_random": self.last_eval.get("contact_episode_rate", NAN),
+            "eval_hit_rate_random": self.last_eval.get("learner_hit_rate", self.last_eval.get("hit_rate", NAN)),
+            "eval_mean_ending_ammo_random": self.last_eval.get("learner_mean_ending_ammo", self.last_eval.get("mean_ending_ammo", NAN)),
             "learner_elo": league["learner_elo"],
             "pool_size": league["pool_size"],
             "best_pool_elo": league["best_pool_elo"],

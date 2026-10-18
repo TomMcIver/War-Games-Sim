@@ -13,10 +13,13 @@
   "curriculum": {
     "metric": "eval_random",
     "stages": [
-      {"team_size": 1, "map_kind": "arena", "promote_winrate": 0.8, "min_updates": 50},
-      {"team_size": 2, "map_kind": "arena", "promote_winrate": 0.8, "min_updates": 100},
-      {"team_size": 4, "map_kind": "building", "promote_winrate": 0.75, "min_updates": 200},
-      {"team_size": 8, "map_kind": "village", "promote_winrate": 1.1, "min_updates": 0}
+      {"team_size": 1, "map_kind": "arena", "scenario": "duel", "max_ticks": 120, "promote_winrate": 0.7, "min_updates": 50, "min_episodes": 32},
+      {"team_size": 1, "map_kind": "arena", "scenario": "cover", "max_ticks": 200, "promote_winrate": 0.65, "min_updates": 75, "min_episodes": 64},
+      {"team_size": 1, "map_kind": "arena", "scenario": "door", "max_ticks": 250, "promote_winrate": 0.6, "min_updates": 75, "min_episodes": 64},
+      {"team_size": 2, "map_kind": "arena", "scenario": "skirmish", "max_ticks": 300, "promote_winrate": 0.6, "min_updates": 100, "min_episodes": 64},
+      {"team_size": 2, "map_kind": "arena", "max_ticks": 450, "promote_winrate": 0.65, "min_updates": 100, "min_episodes": 64},
+      {"team_size": 4, "map_kind": "building", "max_ticks": 600, "promote_winrate": 0.6, "min_updates": 200, "min_episodes": 64},
+      {"team_size": 8, "map_kind": "village", "max_ticks": 600, "promote_winrate": 1.1, "min_updates": 0}
     ]
   }
 }
