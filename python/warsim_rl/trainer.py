@@ -17,7 +17,7 @@ import torch
 from .checkpoint import load_file, save_trainer
 from .config import TrainConfig, config_to_dict
 from .curriculum import Curriculum
-from .env_factory import make_vec_env
+from .env_factory import MixedVecEnv, make_vec_env
 from .evaluate import play_match
 from .league import LATEST, League
 from .logger import CsvLogger
@@ -71,15 +71,37 @@ class Trainer:
         self._build_envs()
 
     # ---------------------------------------------------------------- envs
-    def _build_envs(self) -> None:
+    def _env_mix(self) -> list:
+        """``(stage, n_envs)`` per part of the training batch, current stage first.
+
+        With ``curriculum.rehearsal_frac`` > 0 and earlier stages of the same
+        team size, that share of envs is split across those stages."""
+        total = self.cfg.env.n_envs
         stage = self.curriculum.current()
-        self.env = make_vec_env(
-            self.cfg.env,
-            seed=self.cfg.seed * 7919 + self.update,
-            team_size=stage.team_size,
-            map_kind=stage.map_kind,
-            max_ticks=stage.max_ticks,
-        )
+        earlier = self.curriculum.rehearsal_stages()
+        n_rehearse = min(round(self.cfg.curriculum.rehearsal_frac * total), total - 1)
+        if not earlier or n_rehearse < 1:
+            return [(stage, total)]
+        earlier = earlier[-n_rehearse:]  # fewer envs than stages: keep the most recent
+        base, extra = divmod(n_rehearse, len(earlier))
+        counts = [base + (i >= len(earlier) - extra) for i in range(len(earlier))]
+        return [(stage, total - n_rehearse), *zip(earlier, counts)]
+
+    def _build_envs(self) -> None:
+        seed = self.cfg.seed * 7919 + self.update
+        parts = [
+            make_vec_env(
+                self.cfg.env,
+                seed=seed + 1009 * i,
+                n_envs=n,
+                team_size=stage.team_size,
+                map_kind=stage.map_kind,
+                scenario=stage.scenario,
+                max_ticks=stage.max_ticks,
+            )
+            for i, (stage, n) in enumerate(self._env_mix())
+        ]
+        self.env = parts[0] if len(parts) == 1 else MixedVecEnv(parts)
         self.collector = Collector(
             self.env,
             self.model,
@@ -99,6 +121,7 @@ class Trainer:
             n_envs=min(self.cfg.env.eval_envs, episodes),
             team_size=stage.team_size,
             map_kind=stage.map_kind,
+            scenario=stage.scenario,
             max_ticks=stage.max_ticks,
         )
         try:
@@ -107,16 +130,17 @@ class Trainer:
             )
         finally:
             env.close()
-        return {**res.rates(), "mean_len": res.mean_len}
+        return {**res.rates(), "mean_len": res.mean_len, **res.telemetry}
 
     # ---------------------------------------------------------------- loop
     def shaping_scale(self, progress: float) -> float:
         e = self.cfg.env
         return e.shaping_scale + (e.shaping_scale_final - e.shaping_scale) * progress
 
-    def train(self) -> dict:
+    def train(self, until_update: Optional[int] = None) -> dict:
         cfg = self.cfg
-        while self.update < cfg.total_updates:
+        limit = cfg.total_updates if until_update is None else min(until_update, cfg.total_updates)
+        while self.update < limit:
             t0 = time.perf_counter()
             progress = self.update / max(cfg.total_updates, 1)
             scale = self.shaping_scale(progress)
@@ -133,7 +157,7 @@ class Trainer:
             evaluated = cfg.eval_every > 0 and self.update % cfg.eval_every == 0
             if evaluated:
                 self.last_eval = self.evaluate_vs_random()
-            promoted = self._curriculum_step(evaluated)
+            promoted = self._curriculum_step(evaluated, results)
 
             elapsed = time.perf_counter() - t0
             row = self._row(stats, results, scale, steps, elapsed, t_collect)
@@ -145,13 +169,17 @@ class Trainer:
                 self.save()
         return self.last_row
 
-    def _curriculum_step(self, evaluated: bool) -> bool:
+    def _curriculum_step(self, evaluated: bool, results: list) -> bool:
+        # Rehearsal envs (index >= n_current) never count toward promotion.
+        n_current = getattr(self.env, "n_current", self.env.n_envs)
         if self.curriculum.metric == "eval_random":
             metric = self.last_eval["win_rate"] if evaluated else None
         else:
-            pool = [r.score for r in self.recent if r.opponent != LATEST]
+            pool = [float(r.score == 1.0) for r in self.recent
+                    if r.opponent != LATEST and r.env_index < n_current]
             metric = _mean(pool) if len(pool) >= 20 else None
-        promoted = self.curriculum.step(metric)
+        completed = sum(r.env_index < n_current for r in results)
+        promoted = self.curriculum.step(metric, completed)
         if promoted:
             self.env.close()
             self._build_envs()
@@ -169,6 +197,8 @@ class Trainer:
             "stage": self.curriculum.index,
             "team_size": stage.team_size,
             "map_kind": stage.map_kind,
+            "scenario": stage.scenario,
+            "episodes_in_stage": self.curriculum.episodes_in_stage,
             "episodes": len(results),
             "win_rate": _mean([float(s == 1.0) for s in scores]),
             "draw_rate": _mean([float(s == 0.5) for s in scores]),
@@ -180,6 +210,10 @@ class Trainer:
             "eval_win_rate_random": self.last_eval["win_rate"],
             "eval_draw_rate_random": self.last_eval["draw_rate"],
             "eval_loss_rate_random": self.last_eval["loss_rate"],
+            "eval_timeout_rate_random": self.last_eval.get("timeout_rate", NAN),
+            "eval_contact_rate_random": self.last_eval.get("contact_episode_rate", NAN),
+            "eval_hit_rate_random": self.last_eval.get("learner_hit_rate", self.last_eval.get("hit_rate", NAN)),
+            "eval_mean_ending_ammo_random": self.last_eval.get("learner_mean_ending_ammo", self.last_eval.get("mean_ending_ammo", NAN)),
             "learner_elo": league["learner_elo"],
             "pool_size": league["pool_size"],
             "best_pool_elo": league["best_pool_elo"],

@@ -9,7 +9,7 @@ MAX_UNITS = 2 * MAX_TEAM_SIZE
 ACTION_DIMS = (3, 3, 3, 2, 2)
 ACTION_HEADS = len(ACTION_DIMS)
 
-OBS_KEYS = ("tokens", "token_mask", "local_map", "state", "alive")
+OBS_KEYS = ("tokens", "token_mask", "local_map", "state", "alive", "action_availability")
 
 # Winner codes carried in infos["winner"].
 DRAW = -1

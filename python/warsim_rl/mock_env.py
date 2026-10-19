@@ -302,6 +302,10 @@ class MockVecEnv:
             "local_map": self._local_map(),
             "state": self._state(),
             "alive": self.alive.astype(np.float32),
+            "action_availability": np.stack(
+                [self.alive & (self.ammo > 0) & (self.cooldown <= 1),
+                 np.zeros_like(self.alive, dtype=bool)], -1
+            ).astype(np.float32),
         }
 
     def _local_map(self) -> np.ndarray:

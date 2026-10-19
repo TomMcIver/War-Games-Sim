@@ -109,4 +109,4 @@ def test_adapter_normalises_list_infos():
     assert infos["winner"].tolist() == [1, -1] and infos["episode_len"].tolist() == [9, 0]
     env = VecEnvAdapter(MockVecEnv(n_envs=2, team_size=1), 2, 1)
     obs = env.reset()
-    assert set(obs) == {"tokens", "token_mask", "local_map", "state", "alive"}
+    assert set(obs) == {"tokens", "token_mask", "local_map", "state", "alive", "action_availability"}

@@ -54,6 +54,13 @@ obs, rewards, dones, infos = env.step(actions)
 env.close()                             # or: with warsim.VecEnv(...) as env: ...
 ```
 
+`scenario=` selects `standard` (generated map), `duel` (close open 1v1),
+`cover` (1v1 with central cover), `door` (1v1 separated by a closed door),
+or `skirmish` (close open 2v2). The scenario names are exposed as
+`warsim.SCENARIOS`. The smaller scenarios have fixed initial maps and spawns;
+their episode seeds still control combat spread. The chosen scenario must
+match its 1v1 or 2v2 team size.
+
 | output | dtype | shape |
 |---|---|---|
 | `obs["tokens"]` | float32 | `[E, U, U, TOKEN_FEATS]` |
@@ -61,10 +68,12 @@ env.close()                             # or: with warsim.VecEnv(...) as env: ..
 | `obs["local_map"]` | float32 | `[E, U, MAP_CHANNELS, LOCAL_VIEW, LOCAL_VIEW]` |
 | `obs["state"]` | float32 | `[E, U * STATE_FEATS]` (critic only) |
 | `obs["alive"]` | float32 | `[E, U]` |
+| `obs["action_availability"]` | float32 | `[E, U, 2]` (shoot, interact) |
 | `rewards` | float32 | `[E, U]` |
 | `dones` | bool | `[E]` |
 | `infos["winner"]` | int8 | `[E]`, -1 draw/none else team id; valid where `dones` |
 | `infos["episode_len"]` | uint32 | `[E]`, valid where `dones` |
+| `infos["episode_stats"]` | dict of arrays | `[E]` per field; zero unless done. `termination`: 0 ongoing, 1 team wipe, 2 mutual wipe, 3 timeout; plus shots fired/hit, damage, kills/deaths, contact ticks, ending ammo, survivors by team. Combat and ammo fields also have `_team0` and `_team1` variants. |
 
 Done envs are auto-reset: the obs returned for them is the first obs of the next
 episode. Module constants: `TOKEN_FEATS, MAP_CHANNELS, LOCAL_VIEW, STATE_FEATS,

@@ -13,6 +13,7 @@ OBS_SHAPES = {
     "local_map": lambda e, u: (e, u, warsim.MAP_CHANNELS, warsim.LOCAL_VIEW, warsim.LOCAL_VIEW),
     "state": lambda e, u: (e, u * warsim.STATE_FEATS),
     "alive": lambda e, u: (e, u),
+    "action_availability": lambda e, u: (e, u, 2),
 }
 
 

@@ -7,13 +7,13 @@
   const T = R.TILE;
 
   // ---- constants --------------------------------------------------------
-  const TEAM_COLORS = ["#4cc2ff", "#ff6a4d", "#b38cff", "#59d48a"];
+  const TEAM_COLORS = ["#286b9f", "#b64c45", "#7654a5", "#28734f"];
   const TEAM_NAMES = ["Blue", "Red", "Violet", "Green"];
   const COLORS = {
-    floorA: "#232b33", floorB: "#262f37", wall: "#8c97a3", wallTop: "#a3adb8", wallShade: "#5d6874",
-    door: "#9a6431", doorEdge: "#5e3b1c", doorOpen: "#d0965a", glass: "#7fd6ff", stairs: "#36424e", stairsLine: "#4d5b69",
-    arrow: "#f2b544", dead: "#4a535c", outline: "#0b0f14", hit: "#ff5468", miss: "#c9d2db",
-    select: "#f2b544", hover: "#ffffff", border: "#334252",
+    floorA: "#e7ecef", floorB: "#f0f3f5", wall: "#788795", wallTop: "#aeb9c2", wallShade: "#63717d",
+    door: "#9a7958", doorEdge: "#72563a", doorOpen: "#b08b62", glass: "#6d9db8", stairs: "#d5e0e8", stairsLine: "#9aabb8",
+    arrow: "#1769a6", dead: "#89949e", outline: "#ffffff", hit: "#b83e4b", miss: "#647381",
+    select: "#1769a6", hover: "#263746", border: "#aab8c4",
   };
   const SPEEDS = [0.25, 0.5, 1, 2, 4, 8, 16];
   const TRACER_FRAMES = 6;       // how long a shot tracer stays visible
@@ -361,13 +361,13 @@
         drawWallTile(g, map, x, y, f, p);
         const horiz = runsHorizontally(map, x, y, f);
         drawAcross(g, x, y, p, horiz, 0.34, COLORS.glass);
-        drawAcross(g, x, y, p, horiz, 0.08, "#e6f8ff");
+        drawAcross(g, x, y, p, horiz, 0.08, "#d8e7ef");
         return;
       }
       case T.STAIRS_UP: drawStairs(g, x, y, p, true); return;
       case T.STAIRS_DOWN: drawStairs(g, x, y, p, false); return;
       default: // unknown tile id: make it obvious instead of silently hiding it
-        g.fillStyle = "#ff00ff";
+        g.fillStyle = "#b83e4b";
         g.fillRect(x * p, y * p, p, p);
     }
   }
@@ -557,10 +557,10 @@
   function drawHpBar(x, y, r, frac) {
     const w = Math.max(16, r * 2.2), h = Math.max(3, r * 0.22);
     const bx = x - w / 2, by = y - r - h - 5;
-    ctx.fillStyle = "rgba(0,0,0,0.65)";
+    ctx.fillStyle = "rgba(23,33,43,0.18)";
     ctx.fillRect(bx - 1, by - 1, w + 2, h + 2);
     const f = clamp(frac, 0, 1);
-    ctx.fillStyle = f > 0.6 ? "#59d48a" : f > 0.3 ? "#f2b544" : "#ff5468";
+    ctx.fillStyle = f > 0.6 ? "#28734f" : f > 0.3 ? "#a77a2b" : "#b83e4b";
     ctx.fillRect(bx, by, w * f, h);
   }
 

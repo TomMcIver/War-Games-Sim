@@ -99,20 +99,44 @@ python -m warsim_rl.train --config mock_small [--set ppo.lr=3e-4 --set env.n_env
   - optimiser: pg/value loss, entropy, approx-KL, clip fraction, grad norm, explained variance, lr, entropy coefficient, shaping scale
   - throughput: env-steps/sec and agent-steps/sec
 - **Checkpoints.** Written to `runs/<name>/checkpoints/latest.pt` every `checkpoint_every` updates. They hold the model, optimiser, value-norm, league, curriculum, counters and torch RNG. `--resume auto` picks the run up from there.
-- **Curriculum.** Set `curriculum.stages: [{team_size, map_kind, max_ticks, promote_winrate, min_updates}]`. The promotion metric is `eval_random` (the default) or `league`. On promotion the env is rebuilt; the model is size-agnostic.
+- **Curriculum.** Set `curriculum.stages: [{team_size, map_kind, scenario, max_ticks, promote_winrate, min_updates, min_episodes}]`. The promotion metric is win rate in `eval_random` (the default) or `league`. A stage needs both minimum exposure and wins to promote. On promotion the env is rebuilt; the model is size-agnostic. The bundled real-sim config starts with close duels, then cover, doors, 2v2 skirmishes, and full maps.
+- **Action availability.** The actor uses simulator-provided shoot/interact availability masks for physically impossible actions. The same masks enter rollout sampling and PPO updates. Dead-unit actions are masked on every head. Interaction resolves before movement so the mask is accurate for the action tick.
 
 ## Evaluation CLI
 
 ```
 python -m warsim_rl.evaluate --checkpoint X --opponent random|idle|checkpoint|latest
        [--opponent-checkpoint Y] [--episodes N] [--deterministic] [--no-swap]
-       [--config C] [--set k=v] [--env-kind mock|warsim] [--team-size N] [--map-kind K] [--max-ticks T]
+       [--config C] [--set k=v] [--env-kind mock|warsim] [--team-size N] [--map-kind K] [--scenario S] [--max-ticks T]
 ```
 
 - **Output.** JSON with wins, draws, losses, rates, mean episode length, the opponent's Elo (from the run's `league.json`, or 1000 for random) and the checkpoint's performance Elo.
 - **Sides.** Sides alternate across envs.
 - **Fair counting.** Each env plays a fixed quota of episodes, so short episodes are not over-counted.
 - **Env settings.** These come from the checkpoint, including its curriculum stage, unless overridden.
+
+For a repeatable real-simulator random baseline without a checkpoint, run
+`python -m warsim_rl.baseline --episodes 64 --opponent random`. The JSON
+includes termination reasons, contact ticks, shots, hits, damage, deaths, and
+ending ammo as well as the match outcome. `--opponent idle` isolates whether
+random actions can find and hit an unmoving enemy.
+
+For a fixed real-simulator comparison after checkpoint selection, run:
+
+```bash
+python -m warsim_rl.heldout \
+  --checkpoint runs/NAME/pool/u000050.pt \
+  --checkpoint runs/NAME/checkpoints/latest.pt \
+  --opponents random idle frozen \
+  --frozen-checkpoint runs/NAME/pool/u000050.pt \
+  --out runs/NAME/heldout.json
+```
+
+The report records every seed, scenario, checkpoint, and opponent, plus
+aggregate outcomes, win-rate intervals, contact, timeout, hit rate, damage,
+and ammo. Matches use equal quotas on both sides. Keep the fixed seeds out of
+training and checkpoint selection; interpreting improvements still requires
+a sufficiently trained real-simulator checkpoint.
 
 ## Mock env (`MockVecEnv`)
 
@@ -171,4 +195,4 @@ bash infra/run.sh bash -c "cd python && pip install -e . -q && python -m warsim_
 
 The `itself` row is a sanity check: the same weights against each other come out at about 50/50.
 
-**Real sim.** `--config warsim_small` trains end-to-end on the Rust `warsim` env (1v1 arena curriculum stage, 32 envs × 128 steps) at about 1.5k–4k env-steps/s on 4 threads. Learning curves on the real sim have not been measured yet.
+**Real sim.** `--config warsim_small` starts on the close 1v1 duel stage (32 envs × 128 steps), then promotes by measured wins and completed episodes. Learning curves on the revised real-sim curriculum have not been measured yet.

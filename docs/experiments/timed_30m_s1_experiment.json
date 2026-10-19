@@ -1,0 +1,11 @@
+{
+  "minutes_budget": 30.0,
+  "seed": 1,
+  "validation_seeds": [
+    31001,
+    42002
+  ],
+  "validation_episodes_per_seed": 32,
+  "updates_completed": 352,
+  "elapsed_minutes": 30.311
+}

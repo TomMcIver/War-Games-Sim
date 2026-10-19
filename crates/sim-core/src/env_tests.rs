@@ -49,6 +49,52 @@ fn shoot() -> Action {
     }
 }
 
+#[test]
+fn timeout_telemetry_counts_contact_and_resets() {
+    let cfg = EnvConfig {
+        max_ticks: 3,
+        ..exact_cfg()
+    };
+    let mut env = duel(cfg, 2.5, 6.5);
+    for _ in 0..2 {
+        assert!(env.step(&[Action::default(); 2]).episode_stats.is_none());
+    }
+    let stats = env.step(&[Action::default(); 2]).episode_stats.unwrap();
+    assert_eq!(stats.termination, TerminationReason::Timeout);
+    assert_eq!(stats.contact_ticks, 3);
+    assert_eq!(
+        (stats.shots_fired, stats.shots_hit, stats.deaths),
+        (0, 0, 0)
+    );
+    assert_eq!(stats.ending_ammo, 2 * crate::world::DEFAULT_AMMO);
+    assert_eq!((stats.survivors_team0, stats.survivors_team1), (1, 1));
+    env.reset(4);
+    assert!(env.step(&[Action::default(); 2]).episode_stats.is_none());
+}
+
+#[test]
+fn wipe_telemetry_counts_damage_and_ammo() {
+    let mut env = duel(exact_cfg(), 2.5, 6.5);
+    env.world.units[1].hp = 10.0;
+    let stats = env
+        .step(&[shoot(), Action::default()])
+        .episode_stats
+        .unwrap();
+    assert_eq!(stats.termination, TerminationReason::TeamWipe);
+    assert_eq!(
+        (
+            stats.shots_fired,
+            stats.shots_hit,
+            stats.kills,
+            stats.deaths
+        ),
+        (1, 1, 1, 1)
+    );
+    assert_eq!(stats.damage_dealt, 10.0);
+    assert_eq!(stats.ending_ammo, 2 * crate::world::DEFAULT_AMMO - 1);
+    assert_eq!((stats.survivors_team0, stats.survivors_team1), (1, 0));
+}
+
 fn random_actions(rng: &mut impl Rng, n: usize, max: u8) -> Vec<Action> {
     (0..n)
         .map(|_| Action {

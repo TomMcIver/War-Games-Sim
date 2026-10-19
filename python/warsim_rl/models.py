@@ -194,8 +194,14 @@ class ActorCritic(nn.Module):
         h = h * (1.0 - reset.float())[:, None]
         return self.gru(feat, h)
 
-    def _logits(self, core: torch.Tensor, alive: Optional[torch.Tensor]) -> list:
+    def _logits(self, core: torch.Tensor, alive: Optional[torch.Tensor],
+                availability: Optional[torch.Tensor]) -> list:
         logits = [head(core) for head in self.heads]
+        if self.cfg.mask_unavailable_actions and availability is not None:
+            for head, index in ((3, 0), (4, 1)):
+                unavailable = availability[..., index] < 0.5
+                mask = torch.stack([torch.zeros_like(unavailable), unavailable], -1)
+                logits[head] = logits[head].masked_fill(mask, NEG_INF_LOGIT)
         if alive is not None and self.cfg.mask_dead_actions:
             logits = [mask_dead(lg, alive) for lg in logits]
         return logits
@@ -205,7 +211,7 @@ class ActorCritic(nn.Module):
         feat = self.encoder(obs["tokens"], obs["token_mask"], obs["local_map"])
         core = self._recur(feat, h, reset)
         new_h = core if self.gru is not None else h
-        return self._logits(core, obs.get("alive")), core, new_h
+        return self._logits(core, obs.get("alive"), obs.get("action_availability")), core, new_h
 
     def forward_seq(self, obs: dict, h0: torch.Tensor, resets: torch.Tensor) -> tuple:
         """Unroll over a chunk: obs fields [L, B, ...], resets [L, B] (1 = new
@@ -223,7 +229,7 @@ class ActorCritic(nn.Module):
                 outs.append(h)
             core = torch.stack(outs)
         alive = obs.get("alive")
-        logits = self._logits(core, alive)
+        logits = self._logits(core, alive, obs.get("action_availability"))
         return logits, core
 
     def value(

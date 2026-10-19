@@ -16,6 +16,7 @@ MAX_UNITS: Final[int]
 ACTION_HEADS: Final[int]
 ACTION_DIMS: Final[tuple[int, int, int, int, int]]
 MAP_KINDS: Final[tuple[str, ...]]
+SCENARIOS: Final[tuple[str, ...]]
 
 class Obs(TypedDict):
     tokens: npt.NDArray[np.float32]  # [E, U, U, TOKEN_FEATS]
@@ -23,10 +24,12 @@ class Obs(TypedDict):
     local_map: npt.NDArray[np.float32]  # [E, U, MAP_CHANNELS, LOCAL_VIEW, LOCAL_VIEW]
     state: npt.NDArray[np.float32]  # [E, U * STATE_FEATS]
     alive: npt.NDArray[np.float32]  # [E, U]
+    action_availability: npt.NDArray[np.float32]  # [E, U, 2] shoot, interact
 
 class Infos(TypedDict):
     winner: npt.NDArray[np.int8]  # [E], -1 draw/none, else team id; valid where dones
     episode_len: npt.NDArray[np.uint32]  # [E], valid where dones
+    episode_stats: dict[str, npt.NDArray]  # named [E] arrays; zero on non-terminal steps
 
 class VecEnv:
     def __init__(
@@ -39,6 +42,7 @@ class VecEnv:
         tick_seconds: float = 0.1,
         num_threads: int | None = None,
         *,
+        scenario: Literal["standard", "duel", "cover", "door", "skirmish"] | str = "standard",
         reward_win: float | None = None,
         reward_loss: float | None = None,
         reward_draw: float | None = None,

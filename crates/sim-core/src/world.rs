@@ -250,6 +250,55 @@ impl World {
         }
     }
 
+    /// Whether interacting now would change the world. Env applies interaction
+    /// before movement so this is also the mask for the next action tick.
+    pub(crate) fn can_interact(&self, i: usize, radius: f32) -> bool {
+        let u = &self.units[i];
+        if !u.alive {
+            return false;
+        }
+        let p = u.pos;
+        let (sx, sy) = (p.x.floor() as i32, p.y.floor() as i32);
+        if let Some((_, _, nf)) = self.map.stairs_destination(sx, sy, i32::from(p.floor)) {
+            let floor = nf as u8;
+            let exact = Pos { floor, ..p };
+            let centre = Pos {
+                x: sx as f32 + 0.5,
+                y: sy as f32 + 0.5,
+                floor,
+            };
+            if [exact, centre].into_iter().any(|c| {
+                self.map.circle_fits(c.x, c.y, nf, radius)
+                    && !self.units.iter().enumerate().any(|(j, o)| {
+                        j != i
+                            && o.alive
+                            && o.pos.floor == floor
+                            && dist2(c, o.pos) < 4.0 * radius * radius
+                    })
+            }) {
+                return true;
+            }
+        }
+        let (fx, fy) = u.facing();
+        let reach = radius + 0.5;
+        let tx = (p.x + fx * reach).floor() as i32;
+        let ty = (p.y + fy * reach).floor() as i32;
+        let f = i32::from(p.floor);
+        match self.map.tile(tx, ty, f) {
+            Tile::DoorClosed => true,
+            Tile::DoorOpen => {
+                let mut closed = self.map.clone();
+                closed.toggle_door(tx, ty, f);
+                self.units.iter().all(|o| {
+                    !o.alive
+                        || i32::from(o.pos.floor) != f
+                        || closed.circle_fits(o.pos.x, o.pos.y, f, radius)
+                })
+            }
+            _ => false,
+        }
+    }
+
     fn use_stairs(&mut self, i: usize, radius: f32) -> InteractOutcome {
         let p = self.units[i].pos;
         let (tx, ty) = (p.x.floor() as i32, p.y.floor() as i32);

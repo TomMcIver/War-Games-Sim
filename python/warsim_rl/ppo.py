@@ -82,7 +82,7 @@ class ValueNormalizer:
         self.mean, self.mean_sq, self.debias = state["mean"], state["mean_sq"], state["debias"]
 
 
-AGENT_OBS = ("tokens", "token_mask", "local_map", "alive")
+AGENT_OBS = ("tokens", "token_mask", "local_map", "alive", "action_availability")
 
 
 class RolloutBuffer:

@@ -12,8 +12,8 @@
     <header class="topbar">
       <div class="brand">
         <span class="brand-mark" aria-hidden="true"></span>
-        <span class="brand-name">WARSIM</span>
-        <span class="brand-sub">replay</span>
+        <span class="brand-name">WAR-GAMES-SIM</span>
+        <span class="brand-sub">Replay review</span>
       </div>
       <div class="meta" id="meta" aria-live="polite">No replay loaded</div>
       <div class="topbar-actions">
@@ -22,7 +22,7 @@
           <input type="file" id="file-input" accept=".json,application/json" hidden>
           Open replay
         </label>
-        <button class="btn btn-ghost" id="btn-sample" type="button" title="Load the bundled demo replay">Sample</button>
+        <button class="btn btn-ghost" id="btn-sample" type="button" title="Load the bundled demo replay">Sample replay</button>
         <button class="btn btn-ghost btn-icon" id="btn-help" type="button" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts">?</button>
       </div>
     </header>
@@ -59,15 +59,15 @@
 
     <aside class="side" id="side">
       <section class="panel">
-        <h2>Forces</h2>
+        <h2>Teams</h2>
         <div id="teams"></div>
       </section>
       <section class="panel">
-        <h2>Combat</h2>
+        <h2>Engagement summary</h2>
         <table class="stats" id="combat"></table>
       </section>
       <section class="panel">
-        <h2>Display</h2>
+        <h2>View options</h2>
         <label class="check"><input type="checkbox" id="opt-ghost" checked> Show floor below</label>
         <label class="check"><input type="checkbox" id="opt-others" checked> Show units on other floors</label>
         <label class="check"><input type="checkbox" id="opt-tracers" checked> Shot tracers</label>
@@ -75,7 +75,7 @@
         <label class="check"><input type="checkbox" id="opt-smooth" checked> Smooth playback</label>
       </section>
       <section class="panel">
-        <h2>Legend</h2>
+        <h2>Map key</h2>
         <ul class="legend">
           <li><i class="sw sw-floor"></i>Floor</li>
           <li><i class="sw sw-wall"></i>Wall</li>

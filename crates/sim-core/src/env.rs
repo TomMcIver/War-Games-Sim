@@ -5,9 +5,9 @@
 //! 1. clear `World.shots`; sanitise actions (invalid head values -> 0,
 //!    missing actions -> all zeros); dead units' actions are ignored;
 //! 2. weapon and interact cooldowns tick down by one;
-//! 3. turn, then move (units move sequentially by index, sliding on walls
+//! 3. interact (stairs if standing on them, else toggle the door in front);
+//! 4. turn, then move (units move sequentially by index, sliding on walls
 //!    and other units);
-//! 4. interact (stairs if standing on them, else toggle the door in front);
 //! 5. shooting, resolved simultaneously (see `combat`);
 //! 6. `tick += 1`, termination check, rewards.
 //!
@@ -21,7 +21,7 @@ use rand::SeedableRng;
 use rand_chacha::ChaCha8Rng;
 
 use crate::combat::{self, WeaponStats};
-use crate::map::GameMap;
+use crate::map::{GameMap, Tile};
 use crate::reward::{compute_rewards, Outcome, RewardConfig, TickEvents};
 use crate::types::{Action, Pos, TeamId, MAX_TEAM_SIZE};
 use crate::world::{InteractOutcome, Unit, UnitStats, World};
@@ -33,6 +33,9 @@ pub struct EnvConfig {
     pub tick_seconds: f32,
     /// "arena" | "building" | "village" (map-agent defines kinds).
     pub map_kind: String,
+    /// "standard" procedural spawns, or a compact combat lesson: "duel",
+    /// "cover", "door", "skirmish". Scenarios change initial conditions only.
+    pub scenario: String,
     /// Body / movement physics.
     pub unit: UnitStats,
     /// Weapon physics.
@@ -48,6 +51,7 @@ impl Default for EnvConfig {
             max_ticks: 600,
             tick_seconds: 0.1,
             map_kind: "arena".into(),
+            scenario: "standard".into(),
             unit: UnitStats::default(),
             weapon: WeaponStats::default(),
             reward: RewardConfig::default(),
@@ -61,6 +65,41 @@ pub struct StepResult {
     pub rewards: Vec<f32>,
     pub done: bool,
     pub winner: Option<TeamId>,
+    /// Completed episode telemetry, present only on the terminal step.
+    pub episode_stats: Option<EpisodeStats>,
+}
+
+/// Why an episode ended. Zero is reserved for VecEnv steps without a finish.
+#[repr(u8)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum TerminationReason {
+    #[default]
+    None = 0,
+    TeamWipe = 1,
+    MutualWipe = 2,
+    Timeout = 3,
+}
+
+/// Match-level measurements. Counts include both teams unless named otherwise.
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct EpisodeStats {
+    pub termination: TerminationReason,
+    pub shots_fired: u32,
+    pub shots_hit: u32,
+    pub damage_dealt: f32,
+    pub kills: u32,
+    pub deaths: u32,
+    /// Ticks when at least one living opposing pair had line of sight.
+    pub contact_ticks: u32,
+    pub ending_ammo: u32,
+    pub survivors_team0: u32,
+    pub survivors_team1: u32,
+    pub team_shots_fired: [u32; 2],
+    pub team_shots_hit: [u32; 2],
+    pub team_damage_dealt: [f32; 2],
+    pub team_kills: [u32; 2],
+    pub team_deaths: [u32; 2],
+    pub team_ending_ammo: [u32; 2],
 }
 
 pub struct Env {
@@ -69,6 +108,7 @@ pub struct Env {
     rng: ChaCha8Rng,
     done: bool,
     winner: Option<TeamId>,
+    episode_stats: EpisodeStats,
     /// Per-unit ticks until `interact` works again (see
     /// `UnitStats::interact_cooldown_ticks`).
     interact_cooldown: Vec<u32>,
@@ -103,6 +143,7 @@ impl Env {
             rng: ChaCha8Rng::seed_from_u64(seed),
             done: false,
             winner: None,
+            episode_stats: EpisodeStats::default(),
             interact_cooldown: vec![0; n],
             scratch: StepScratch::default(),
         }
@@ -119,6 +160,7 @@ impl Env {
         self.rng = ChaCha8Rng::seed_from_u64(seed);
         self.done = false;
         self.winner = None;
+        self.episode_stats = EpisodeStats::default();
         self.interact_cooldown.clear();
         self.interact_cooldown.resize(self.world.units.len(), 0);
     }
@@ -153,6 +195,7 @@ impl Env {
                 rewards: vec![0.0; n],
                 done: true,
                 winner: self.winner,
+                episode_stats: None,
             };
         }
         self.world.shots.clear();
@@ -168,18 +211,22 @@ impl Env {
             *cd = cd.saturating_sub(1);
         }
 
-        let dt = self.cfg.tick_seconds;
         let stats = &self.cfg.unit;
-        for i in (0..n).filter(|&i| s.events.was_alive[i]) {
-            self.world.turn_unit(i, s.acts[i].turn, stats, dt);
-            s.moved[i] = self.world.move_unit(i, &s.acts[i], stats, dt);
-        }
         for i in (0..n).filter(|&i| s.events.was_alive[i] && s.acts[i].interact == 1) {
             if self.interact_cooldown[i] == 0
                 && self.world.interact(i, stats) != InteractOutcome::None
             {
                 self.interact_cooldown[i] = stats.interact_cooldown_ticks;
             }
+        }
+        let dt = self.cfg.tick_seconds;
+        for i in (0..n).filter(|&i| s.events.was_alive[i]) {
+            self.world.turn_unit(i, s.acts[i].turn, stats, dt);
+            s.moved[i] = self.world.move_unit(i, &s.acts[i], stats, dt);
+        }
+
+        if opposing_units_have_contact(&self.world) {
+            self.episode_stats.contact_ticks += 1;
         }
 
         s.wants_shoot
@@ -193,18 +240,74 @@ impl Env {
             &mut self.rng,
             &mut s.events,
         );
+        self.episode_stats.shots_fired += self.world.shots.len() as u32;
+        for shot in &self.world.shots {
+            let team = self.world.units[shot.shooter].team as usize;
+            self.episode_stats.team_shots_fired[team] += 1;
+            self.episode_stats.team_shots_hit[team] += u32::from(shot.hit.is_some());
+        }
+        self.episode_stats.shots_hit += self
+            .world
+            .shots
+            .iter()
+            .filter(|shot| shot.hit.is_some())
+            .count() as u32;
+        self.episode_stats.damage_dealt += s.events.damage_dealt.iter().sum::<f32>();
+        self.episode_stats.kills += s.events.kills.iter().sum::<u32>();
+        for (i, unit) in self.world.units.iter().enumerate() {
+            let team = unit.team as usize;
+            self.episode_stats.team_damage_dealt[team] += s.events.damage_dealt[i];
+            self.episode_stats.team_kills[team] += s.events.kills[i];
+            self.episode_stats.team_deaths[team] += u32::from(s.events.was_alive[i] && !unit.alive);
+        }
+        self.episode_stats.deaths += s
+            .events
+            .was_alive
+            .iter()
+            .enumerate()
+            .filter(|(i, alive)| **alive && !self.world.units[*i].alive)
+            .count() as u32;
 
         self.world.tick += 1;
         let outcome = check_outcome(&self.world, self.cfg.max_ticks);
         if let Some(o) = outcome {
             self.done = true;
             self.winner = o.winner();
+            self.episode_stats.survivors_team0 = self.world.alive_count(0) as u32;
+            self.episode_stats.survivors_team1 = self.world.alive_count(1) as u32;
+            self.episode_stats.ending_ammo = self.world.units.iter().map(|u| u.ammo).sum();
+            for unit in &self.world.units {
+                self.episode_stats.team_ending_ammo[unit.team as usize] += unit.ammo;
+            }
+            self.episode_stats.termination = match (
+                self.episode_stats.survivors_team0,
+                self.episode_stats.survivors_team1,
+            ) {
+                (0, 0) => TerminationReason::MutualWipe,
+                (0, _) | (_, 0) => TerminationReason::TeamWipe,
+                _ => TerminationReason::Timeout,
+            };
         }
         let rewards = compute_rewards(&self.cfg.reward, stats.max_hp, &s.teams, &s.events, outcome);
         StepResult {
             rewards,
             done: self.done,
             winner: self.winner,
+            episode_stats: outcome.map(|_| self.episode_stats),
+        }
+    }
+
+    /// Physical availability for shoot and interact, two floats per unit.
+    /// Cooldowns tick down before actions are resolved on the next step.
+    pub fn write_action_availability(&self, out: &mut [f32]) {
+        assert_eq!(out.len(), self.world.units.len() * 2);
+        for (i, u) in self.world.units.iter().enumerate() {
+            out[2 * i] = f32::from(u.alive && u.ammo > 0 && u.cooldown <= 1);
+            out[2 * i + 1] = f32::from(
+                u.alive
+                    && self.interact_cooldown.get(i).copied().unwrap_or(0) <= 1
+                    && self.world.can_interact(i, self.cfg.unit.radius),
+            );
         }
     }
 
@@ -285,6 +388,17 @@ fn check_outcome(world: &World, max_ticks: u32) -> Option<Outcome> {
     }
 }
 
+fn opposing_units_have_contact(world: &World) -> bool {
+    world.units.iter().enumerate().any(|(i, a)| {
+        a.alive
+            && world
+                .units
+                .iter()
+                .skip(i + 1)
+                .any(|b| b.alive && a.team != b.team && world.map.line_of_sight(a.pos, b.pos))
+    })
+}
+
 /// Largest unit radius the generated maps support (1-tile doorways).
 const MAX_UNIT_RADIUS: f32 = 0.5;
 
@@ -304,6 +418,12 @@ fn validate(cfg: &EnvConfig) {
         r > 0.0 && r < MAX_UNIT_RADIUS,
         "unit.radius must be in (0, {MAX_UNIT_RADIUS}) so units fit through doorways, got {r}"
     );
+    match cfg.scenario.as_str() {
+        "standard" => {}
+        "duel" | "cover" | "door" => assert_eq!(cfg.team_size, 1, "scenario requires 1v1"),
+        "skirmish" => assert_eq!(cfg.team_size, 2, "skirmish requires 2v2"),
+        other => panic!("unknown scenario {other:?}"),
+    }
 }
 
 /// Head values outside `ACTION_DIMS` become 0.
@@ -322,7 +442,16 @@ fn sanitize(a: Action) -> Action {
 /// the enemy spawns.
 fn spawn_units(map: &GameMap, cfg: &EnvConfig) -> Vec<Unit> {
     let n = cfg.team_size;
-    let points: [Vec<Pos>; 2] = [0, 1].map(|t| map.spawn_points(t, n));
+    let points: [Vec<Pos>; 2] = match cfg.scenario.as_str() {
+        "duel" => [vec![scenario_pos(4.5, 4.5)], vec![scenario_pos(8.5, 4.5)]],
+        "cover" => [vec![scenario_pos(5.5, 5.5)], vec![scenario_pos(13.5, 5.5)]],
+        "door" => [vec![scenario_pos(7.5, 5.5)], vec![scenario_pos(11.5, 5.5)]],
+        "skirmish" => [
+            vec![scenario_pos(5.5, 4.5), scenario_pos(5.5, 8.5)],
+            vec![scenario_pos(13.5, 4.5), scenario_pos(13.5, 8.5)],
+        ],
+        _ => [0, 1].map(|t| map.spawn_points(t, n)),
+    };
     let centroid = |ps: &[Pos]| {
         let k = ps.len().max(1) as f32;
         (
@@ -344,6 +473,10 @@ fn spawn_units(map: &GameMap, cfg: &EnvConfig) -> Vec<Unit> {
     units
 }
 
+fn scenario_pos(x: f32, y: f32) -> Pos {
+    Pos { x, y, floor: 0 }
+}
+
 fn hash_map_tiles(h: &mut Fnv1a, map: &GameMap) {
     h.u64(map.width as u64);
     h.u64(map.height as u64);
@@ -361,7 +494,37 @@ fn hash_map_tiles(h: &mut Fnv1a, map: &GameMap) {
 /// give different layouts. Unknown kinds fall back to "arena" (the Python
 /// bindings validate `map_kind` up front).
 fn build_map(cfg: &EnvConfig, seed: u64) -> GameMap {
-    GameMap::generate(&cfg.map_kind, seed, cfg.team_size)
+    if cfg.scenario == "standard" {
+        return GameMap::generate(&cfg.map_kind, seed, cfg.team_size);
+    }
+    let (w, h) = match cfg.scenario.as_str() {
+        "duel" => (13, 9),
+        "skirmish" => (19, 13),
+        _ => (19, 11),
+    };
+    let mut map = GameMap::filled(w, h, 1, Tile::Floor);
+    for x in 0..w {
+        map.set_tile(x, 0, 0, Tile::Wall);
+        map.set_tile(x, h - 1, 0, Tile::Wall);
+    }
+    for y in 0..h {
+        map.set_tile(0, y, 0, Tile::Wall);
+        map.set_tile(w - 1, y, 0, Tile::Wall);
+    }
+    match cfg.scenario.as_str() {
+        "cover" => {
+            for y in 4..=6 {
+                map.set_tile(9, y, 0, Tile::Wall);
+            }
+        }
+        "door" => {
+            for y in 1..h - 1 {
+                map.set_tile(9, y, 0, if y == 5 { Tile::DoorClosed } else { Tile::Wall });
+            }
+        }
+        _ => {}
+    }
+    map
 }
 
 /// 64-bit FNV-1a. Order-stable and platform-independent (little-endian

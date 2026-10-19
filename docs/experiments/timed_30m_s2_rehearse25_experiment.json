@@ -1,0 +1,12 @@
+{
+  "minutes_budget": 30.0,
+  "seed": 2,
+  "rehearsal_frac": 0.25,
+  "validation_seeds": [
+    31001,
+    42002
+  ],
+  "validation_episodes_per_seed": 32,
+  "updates_completed": 400,
+  "elapsed_minutes": 30.004
+}
