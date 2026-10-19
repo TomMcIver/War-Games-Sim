@@ -95,3 +95,46 @@ The reserved seeds confirm the cover gain and duel regression. Arena remained
 almost entirely timeouts, so this experiment does not show transfer to that
 scenario. A next experiment should protect earlier-stage performance during
 cover training and evaluate more map layouts and opponent policies.
+
+## Rehearsal of earlier stages
+
+The forgetting above motivated `curriculum.rehearsal_frac`. After a promotion,
+that share of the training environments (here 25%, 8 of 32) keeps playing
+earlier stages of the same team size; the rest play the current stage. Only
+current-stage episodes count toward promotion. The run `timed_30m_s1_rehearse25`
+repeats the seed-1, 30-minute experiment with `--rehearsal-frac 0.25`:
+
+```bash
+PYTHONPATH=python python -m warsim_rl.timed_experiment \
+  --minutes 30 --seed 1 --name timed_30m_s1_rehearse25 \
+  --chunk-updates 50 --validation-episodes-per-seed 32 --rehearsal-frac 0.25
+```
+
+It completed 446 updates in 30.92 minutes (the first run: 352) and promoted from
+duel to cover at update 200, as before.
+Validation uses the same fixed seeds, 64 matches per point. The
+[graph](experiments/timed_30m_s1_rehearse25.png) and
+[CSV](experiments/timed_30m_s1_rehearse25.csv) are in this repository.
+
+| Update | Cover wins / draws / losses | Fixed duel wins / draws / losses |
+| ---: | ---: | ---: |
+| 200 | 0 / 64 / 0 | 58 / 4 / 2 |
+| 250 | 5 / 59 / 0 | 59 / 2 / 3 |
+| 300 | 6 / 58 / 0 | 59 / 5 / 0 |
+| 350 | 7 / 56 / 1 | 61 / 2 / 1 |
+| 400 | 9 / 54 / 1 | 60 / 3 / 1 |
+| 446 | 23 / 41 / 0 | 61 / 2 / 1 |
+
+Duel retention is fixed: the duel win count stayed at 58–61 of 64 after
+promotion, where the first run fell to 41–43 of 64. The cost is slower cover
+learning. At update 350 cover stood at 7/64 against 24/64 without rehearsal,
+and the final 23/64 at update 446 is below the first run's 31/64 at update
+352 despite 94 more updates. Cover wins jumped from 9 to 23 over the last 46
+updates, so the end point is unsettled, as in the first run.
+
+This is one seed with 64 matches per point, so treat the retention gain as
+clear (about 60 versus 43 of 64) and the cover slowdown as likely but not
+established. Not yet run: the reserved held-out suite on these checkpoints, a
+second seed, other rehearsal fractions (for example 0.1 or an annealed
+share), and door or skirmish stages, where rehearsal splits across more than
+one earlier stage.
