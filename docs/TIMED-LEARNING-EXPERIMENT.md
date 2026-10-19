@@ -173,3 +173,27 @@ Still not run: the reserved held-out suite on any rehearsal checkpoint, more
 seeds, annealed rehearsal, and skirmish stages. The seed-1 baseline directory
 `runs/timed_30m_s1` was later overwritten by an aborted resume; the committed
 `docs/experiments/timed_30m_s1.csv` holds the run reported above.
+
+## Held-out check of the final checkpoints
+
+The five final checkpoints were played once against the seeded random policy
+on the reserved seeds (71011, 82021, 93031, 104041), 64 matches per scenario,
+sides balanced. Wins / draws / losses; full telemetry is in
+[rehearsal_heldout.json](experiments/rehearsal_heldout.json).
+
+| Run (final update) | Duel | Cover | Door |
+| --- | ---: | ---: | ---: |
+| seed 1, none (352) | 46 / 18 / 0 | 37 / 27 / 0 | 2 / 62 / 0 |
+| seed 1, 10% (373) | 61 / 3 / 0 | 31 / 32 / 1 | 6 / 58 / 0 |
+| seed 1, 25% (446) | 62 / 2 / 0 | 33 / 31 / 0 | 3 / 61 / 0 |
+| seed 2, none (411) | 58 / 6 / 0 | 37 / 27 / 0 | 4 / 60 / 0 |
+| seed 2, 25% (400) | 61 / 3 / 0 | 46 / 17 / 1 | 46 / 17 / 1 |
+
+- Seed 1: rehearsal kept duel at 61-62/64 against 46/64 without it, and
+  the final cover results are similar (31-37/64), so the in-training cover
+  gap at update 350 had mostly closed by these checkpoints.
+- Seed 2: 25% rehearsal was better on cover (46 against 37) and far better
+  on door (46 against 4), although that run had the same promotion schedule
+  luck as before; one seed does not separate rehearsal from run-to-run noise.
+- No scenario here shows rehearsal clearly hurting. Door and arena
+  generalization beyond fixed geometry remain untested.
