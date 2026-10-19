@@ -138,3 +138,38 @@ established. Not yet run: the reserved held-out suite on these checkpoints, a
 second seed, other rehearsal fractions (for example 0.1 or an annealed
 share), and door or skirmish stages, where rehearsal splits across more than
 one earlier stage.
+
+## Second seed and a smaller rehearsal share
+
+Three more 30-minute runs used the same setup: seed 2 without rehearsal,
+seed 2 with `--rehearsal-frac 0.25`, and seed 1 with `--rehearsal-frac 0.10`.
+Wall-clock budgets mean update counts differ, so rows are matched by update.
+Entries are wins / draws / losses over 64 matches versus random; "duel" is the
+fixed duel anchor. Graphs and CSVs are in `docs/experiments/`.
+
+| Run | Update | Stage | Stage result | Duel anchor |
+| --- | ---: | --- | ---: | ---: |
+| seed 1, none | 350 | cover | 24 / 39 / 1 | 41 / 22 / 1 |
+| seed 1, 10% | 350 | cover | 5 / 59 / 0 | 57 / 7 / 0 |
+| seed 1, 25% | 350 | cover | 7 / 56 / 1 | 61 / 2 / 1 |
+| seed 2, none | 400 | door | 16 / 47 / 1 | 63 / 1 / 0 |
+| seed 2, 25% | 400 | door | 46 / 18 / 0 | 59 / 4 / 1 |
+
+Seed 1 final points: 10% reached cover 19/64 at update 373 with the duel
+anchor at 58/64; 25% reached 23/64 at update 446 with 61/64.
+
+What this supports:
+
+- Seed 1 forgot duel without rehearsal (peak 60/64, then 41-43/64); both
+  rehearsal fractions largely prevented that (10%: 46-60/64, 25%: 58-61/64).
+- Seed 2 did not forget without rehearsal (duel anchor 54-63/64 throughout),
+  so there was little for rehearsal to fix, and 25% rehearsal showed no cost
+  there. At update 400 it was ahead on door (46/64 against 16/64), but the
+  control's door results swing widely (5/64 at update 411).
+- The cover slowdown seen on seed 1 did not appear on seed 2. With two seeds,
+  neither the forgetting nor the slowdown is established as general.
+
+Still not run: the reserved held-out suite on any rehearsal checkpoint, more
+seeds, annealed rehearsal, and skirmish stages. The seed-1 baseline directory
+`runs/timed_30m_s1` was later overwritten by an aborted resume; the committed
+`docs/experiments/timed_30m_s1.csv` holds the run reported above.
