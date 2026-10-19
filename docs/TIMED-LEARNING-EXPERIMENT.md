@@ -197,3 +197,25 @@ sides balanced. Wins / draws / losses; full telemetry is in
   from run-to-run noise.
 - No scenario here shows rehearsal clearly hurting. Door and arena
   generalization beyond fixed geometry remain untested.
+
+## Why the standard 2v2 arena ends in timeouts
+
+The held-out arena (2v2, 450 ticks, 30 rounds per unit) stayed almost all
+draws. The seed-1 25%-rehearsal checkpoint (update 446) was played for 64
+matches on the reserved seeds ([data](experiments/arena_probe.json)):
+
+| Opponent | Wins / draws / losses | Matches with contact | Learner hit rate | Learner kills / deaths | Mean ending ammo (per unit) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| random | 10 / 54 / 0 | 100% | 10.0% (370 of 3,684 shots) | 39 / 0 | 2.4 |
+| idle | 13 / 51 / 0 | 94% | 11.2% (402 of 3,576 shots) | 49 / 0 | 4.1 |
+
+The policy finds the enemy (contact in nearly every match) and never loses,
+but it spends almost all of its ammunition at about 10% accuracy and cannot
+finish the kills before running dry. So the timeouts are an
+ammunition-efficiency problem, not an exploration problem: wins are capped by
+roughly 60 rounds at 10% accuracy per team. The earlier update-352 checkpoint
+reached only 1 of 64 arena wins, so the longer rehearsal-trained runs are
+already better here. Candidate fixes, none tried yet: a small penalty for
+shots that miss or reward for conserving ammo, a stage between skirmish and
+the arena that lengthens range gradually, or a higher ammunition count. This
+is one checkpoint and one seed.
