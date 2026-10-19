@@ -193,7 +193,7 @@ sides balanced. Wins / draws / losses; full telemetry is in
   the final cover results are similar (31-37/64), so the in-training cover
   gap at update 350 had mostly closed by these checkpoints.
 - Seed 2: 25% rehearsal was better on cover (46 against 37) and far better
-  on door (46 against 4), although that run had the same promotion schedule
-  luck as before; one seed does not separate rehearsal from run-to-run noise.
+  on door (46 against 4), but this is one seed pair, so it cannot be separated
+  from run-to-run noise.
 - No scenario here shows rehearsal clearly hurting. Door and arena
   generalization beyond fixed geometry remain untested.
