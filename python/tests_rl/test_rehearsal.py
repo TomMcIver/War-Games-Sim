@@ -93,3 +93,9 @@ def test_no_rehearsal_by_default(tmp_path, monkeypatch):
     assert t.curriculum.index == 1 and t.env.n_envs == 4
     assert not hasattr(t.env, "n_current")
     t.close()
+
+
+def test_warsim_small_rehearses_by_default():
+    cfg = load_config("warsim_small")
+    assert cfg.curriculum.rehearsal_frac == 0.25
+    cfg.validate()

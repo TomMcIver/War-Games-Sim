@@ -12,6 +12,7 @@
   "league": {"p_latest": 0.5, "snapshot_every": 20, "pool_size": 30},
   "curriculum": {
     "metric": "eval_random",
+    "rehearsal_frac": 0.25,
     "stages": [
       {"team_size": 1, "map_kind": "arena", "scenario": "duel", "max_ticks": 120, "promote_winrate": 0.7, "min_updates": 50, "min_episodes": 32},
       {"team_size": 1, "map_kind": "arena", "scenario": "cover", "max_ticks": 200, "promote_winrate": 0.65, "min_updates": 75, "min_episodes": 64},
